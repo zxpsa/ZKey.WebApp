@@ -1,2 +1,2 @@
 cd src
-fis3 server stop
+fis3 server stop 
