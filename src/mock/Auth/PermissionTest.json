@@ -1,0 +1,20 @@
+{
+	"Data": {
+		"FinanceManage": true,
+		"ExtendStationAudit": true,
+		"CityPartnerAudit": true,
+		"_UserInfo": {
+			"UserCode": 1,
+			"UserName": "公用测试号1",
+			"UserAccount": "Admin10",
+			"Token": "E9ECE80EDD45AA49BAA6B8F33DD62618640FAF6D6F352EF8A10233A3A246232B",
+			"OrgStatus": 0,
+			"OrgCode": null,
+			"OrgType": 0,
+			"CustomerPhoto": null
+		}
+	},
+	"Desc": "成功",
+	"Code": 100,
+	"IsSuccess": true
+}

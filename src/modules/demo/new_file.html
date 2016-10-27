@@ -1,0 +1,35 @@
+<!DOCTYPE html>
+<html>
+	<head>
+		<meta charset="utf-8" />
+		<title>演示</title>
+		<!--加载公共Head部分 编译时整体替换-->
+		<link rel="import" href="/common/head.html?__inline">
+	</head>
+	<body>
+		<div id="app">
+			<div  v-text="aa"></div>
+			<input type="button" value="测试" @click="confirm()"/>
+		</div>
+	
+
+<script type="text/javascript">
+		new Vue({
+			el: '#app',
+			data:{
+				aa:"asdf"
+			},
+			ready:function(){
+				console.log("asdf");
+			},
+			methods:{
+			  confirm:function(){
+			  	$App.confirm("测试的",function(index){
+					alert("按钮1回调!");
+				});
+			  }
+			}
+		});
+	</script>
+</body>
+</html>

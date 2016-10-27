@@ -1,0 +1,11 @@
+{
+	"Data": {
+		"UserName": "星辰",
+		"UserAccount": "15123085382",
+		"Token": "D0AF8D52D22275654ED93C4BB02E76155A028C3831CAF087899CFAEC8B7EEC4D",
+		"CustomerPhoto" : "/app/img/p8.jpg"
+	},
+	"Desc": "成功",
+	"Code": 100,
+	"IsSuccess": true
+}

@@ -1,0 +1,74 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
+    <title>登录</title>
+	<!--加载公共Head部分 编译时整体替换-->
+	<link rel="import" href="/app/head.html?__inline">
+	<meta http-equiv="cache-control" content="no-cache">
+	<meta http-equiv="Expires" content="0">
+	<meta http-equiv="Pragma" content="no-cache">
+	<meta http-equiv="Cache-control" content="no-cache">
+	<meta http-equiv="Cache" content="no-cache">
+	<link href="libs/hplus/css/login.css" rel="stylesheet">
+	<link rel="shortcut icon"  type="image/x-icon" href="favicon.ico">
+    <!--[if lt IE 9]>
+    	<meta http-equiv="refresh" content="0;url='/common/html/ie.html'" />
+    <![endif]-->
+    <script>
+        if (window.top !== window.self) {
+            window.top.location = window.location;
+        }
+    </script>
+	<style>
+		@media (max-width: 768px) {
+			.signin .signinpanel{
+				width: 100% !important;
+				margin-left: 0;
+			}
+		}
+	</style>
+</head>
+
+<body class="signin" @keyup.enter="login()">
+    <div class="signinpanel">
+        <div class="row">
+            <div class="col-sm-7">
+                <div class="signin-info">
+                    <div class="logopanel m-b">
+                        <h1>[ H+ ]</h1>
+                    </div>
+                    <div class="m-b"></div>
+                    <h4>欢迎使用 <strong>该响应式UI框架</strong></h4>
+                    <ul class="m-b">
+                        <li><i class="fa fa-arrow-circle-o-right m-r-xs"></i> 优势一</li>
+                        <li><i class="fa fa-arrow-circle-o-right m-r-xs"></i> 优势二</li>
+                        <li><i class="fa fa-arrow-circle-o-right m-r-xs"></i> 优势三</li>
+                        <li><i class="fa fa-arrow-circle-o-right m-r-xs"></i> 优势四</li>
+                        <li><i class="fa fa-arrow-circle-o-right m-r-xs"></i> 优势五</li>
+                    </ul>
+                    <strong>还没有账号？ <a href="#">立即注册&raquo;</a></strong>
+                </div>
+            </div>
+            <div class="col-sm-5">
+                <!--<form method="post" action="index.html">-->
+                    <h4 class="no-margins">登录：</h4>
+                    <input type="text" class="form-control uname has-error" placeholder="用户名" v-model="userAccount" @click="clickInput()"/>
+                    <input type="password" class="form-control pword m-b" placeholder="密码" v-model="password" @click="clickInput()"/>
+                    <!--<a href="">忘记密码了？</a>-->
+                    <div style="color: #ED5565;width: 100%;text-align: center;" v-text="errPrompt"></div>
+                    <button class="btn btn-success btn-block" @click="login()" @keyup.enter="login()">登录</button>
+                <!--</form>-->
+            </div>
+        </div>
+        <div class="signup-footer">
+            <div class="pull-right" v-html="footer"></div>
+        </div>
+    </div>
+    <script type="text/javascript">
+		new Vue(require("app/js/login"));
+    </script>
+</body>
+</html>

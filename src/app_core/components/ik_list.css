@@ -1,0 +1,13 @@
+._v-dc9b1934 .table-responsive
+{
+	min-height: 200px;
+}
+._v-dc9b1934 .table thead th
+{
+	white-space:nowrap;
+	text-align: center;
+}
+._v-dc9b1934 .table tr
+{
+	white-space:nowrap;
+}
