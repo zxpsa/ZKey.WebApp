@@ -1,0 +1,20 @@
+{
+    "pageNo":1,
+    "pageSize":20,
+    "totalCount":0,
+    "totalPage":0,
+    "extraData":null,
+    "msg":0,
+    "status":0,
+    "data":
+    {
+        "registerAgreementPath":"重庆市巴南区南滨路",
+        "aboutCreditPath":"此商户信誉评级为最高",
+        "aboutUsPath":"国际认证优秀企业",
+        "repaymentPath":"每年还款100万",
+        "useGuidePath":"商户注册过后就可以使用了",
+        "rbBankListPath":"工商银行，建设银行，中国银行，兴业银行",
+        "bankPath":"ICBC,JSBC,CNBK",
+        "questionPath":"如有支付问题请联系110"
+    }
+}

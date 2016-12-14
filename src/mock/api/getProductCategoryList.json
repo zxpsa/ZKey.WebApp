@@ -1,0 +1,27 @@
+{
+    "pageNo":1,
+    "pageSize":20,
+    "totalCount":0,
+    "totalPage":0,
+    "extraData":null,
+    "msg":0,
+    "status":0,
+    "data":
+    [
+     {
+     "productCategoryId":"1",
+     "productCategoryName":"餐饮",
+     "productCategoryType":2
+     },
+     {
+     "productCategoryId":"2",
+     "productCategoryName":"零食",
+     "productCategoryType":1
+     },
+     {
+     "productCategoryId":"3",
+     "productCategoryName":"电器",
+     "productCategoryType":0
+     }
+     ]
+}

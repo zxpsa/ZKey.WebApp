@@ -1,0 +1,30 @@
+{
+    "pageNo":1,
+    "pageSize":20,
+    "totalCount":0,
+    "totalPage":0,
+    "extraData":null,
+    "msg":0,
+    "status":0,
+    "data":
+    [
+     {
+     "billCategoryId":"100",
+     "billCategoryName":"美食"
+     },
+     {
+     "billCategoryId":"101",
+     "billCategoryName":"出行"
+     },
+     {
+     "billCategoryId":"102",
+     "billCategoryName":"住宿"
+     },
+     {
+     "billCategoryId":"103",
+     "billCategoryName":"美女"
+     }
+    ]
+    
+    
+}

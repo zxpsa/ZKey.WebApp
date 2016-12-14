@@ -1,0 +1,42 @@
+{
+    "pageNo":1,
+    "pageSize":20,
+    "totalCount":0,
+    "totalPage":0,
+    "extraData":null,
+    "msg":0,
+    "status":0,
+    "data":
+    {
+        "psUserId":"10000",
+        "psId":"100",
+        "psName":"北京烤鸭",
+        "psHeadUrl":"http://img.popo.cn/uploadfile/2016/1117/1479366696163956.jpg",
+        "storeLabelList":["好吃到爆","舌尖上的中国","吃货必备"],
+        "followStatus":0,
+    "headImgUrl":"http://img.popo.cn/uploadfile/2016/1117/1479366696163956.jpg",
+        "storePhone":"13628379881",
+        "storeAddress":"重庆市渝北区财富中心",
+        "lng":"29.5829530",
+        "lat":"106.5362613",
+        "storeAuthStatus":1,
+        "storeType":2,
+        "qrCode":"http://img4.imgtn.bdimg.com/it/u=3986054206,2762382904&fm=21&gp=0.jpg",
+        "productCategoryList":
+        [
+         {
+         "productCategoryId":1,
+         "productCategoryName":"北京烤鸭"
+         },
+         {
+         "productCategoryId":2,
+         "productCategoryName":"零食"
+         },
+         {
+         "productCategoryId":3,
+         "productCategoryName":"火锅"
+         }
+         ]
+        
+    }
+}

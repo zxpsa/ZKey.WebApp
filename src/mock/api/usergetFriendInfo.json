@@ -1,0 +1,16 @@
+{
+    "pageNo":1,
+    "pageSize":20,
+    "totalCount":0,
+    "totalPage":0,
+    "extraData":null,
+    "msg":0,
+    "status":0,
+    "data":
+    {
+        "phone":"48280816",
+        "shopName":"吾友朋爱的小屋",
+        "userHead":"http://img4.imgtn.bdimg.com/it/u=3763016054,3759078474&fm=23&gp=0.jpg",
+        "realNameMask":"＊＊有朋"
+    }
+}

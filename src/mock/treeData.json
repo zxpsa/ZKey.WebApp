@@ -1,0 +1,19 @@
+{
+	"status": 0,
+	"msg": "成功",
+	"data": [
+		{
+			"categoryId": "1",
+			"categoryCode": "1",
+			"categoryName": "分类目录1"
+		},{
+			"categoryId": "2",
+			"categoryCode": "2",
+			"categoryName": "分类目录2"
+		},{
+			"categoryId": "3",
+			"categoryCode": "3",
+			"categoryName": "分类目录3"
+		}
+	]
+}

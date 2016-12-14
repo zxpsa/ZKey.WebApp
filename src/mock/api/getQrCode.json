@@ -1,0 +1,13 @@
+{
+    "pageNo":1,
+    "pageSize":20,
+    "totalCount":0,
+    "totalPage":0,
+    "extraData":null,
+    "msg":0,
+    "status":0,
+    "data":
+    {
+        "qrCode":"http://img4.imgtn.bdimg.com/it/u=3986054206,2762382904&fm=21&gp=0.jpg"
+    }
+}

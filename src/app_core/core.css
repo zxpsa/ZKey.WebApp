@@ -1,0 +1,161 @@
+/*!app_core/css/zk_reset.css*/
+* {
+	box-sizing: border-box;
+	-webkit-box-sizing: border-box;
+	-moz-box-sizing: border-box;
+}
+
+body,
+div,
+dl,
+dt,
+dd,
+ul,
+ol,
+li,
+h1,
+h2,
+h3,
+h4,
+h5,
+h6,
+pre,
+code,
+form,
+fieldset,
+legend,
+input,
+textarea,
+p,
+blockquote,
+th,
+td,
+header,
+hgroup,
+nav,
+section,
+article,
+aside,
+footer,
+figure,
+figcaption,
+menu,
+button {
+	margin: 0;
+	padding: 0
+}
+
+body {
+	font-family: "Helvetica Neue","微软雅黑", system, Helvetica, STHeiTi, sans-serif;
+	line-height: 1.5;
+	color: #000;
+	background-color: #f8f8f8;
+	-webkit-user-select: none;
+	-webkit-text-size-adjust: 100%;
+	-webkit-tap-highlight-color: transparent;
+	outline: 0;
+	font-size: 14px;
+}
+
+h1,
+h2,
+h3,
+h4,
+h5,
+h6 {
+	font-size: 100%;
+	font-weight: 400
+}
+
+table {
+	border-collapse: collapse;
+	border-spacing: 0
+}
+
+caption,
+th {
+	text-align: left
+}
+
+fieldset,
+img {
+	border: 0
+}
+
+li {
+	list-style: none
+}
+
+ins {
+	text-decoration: none
+}
+
+del {
+	text-decoration: line-through
+}
+
+input,
+button,
+textarea,
+select,
+optgroup,
+option {
+	font-family: inherit;
+	font-size: inherit;
+	font-style: inherit;
+	font-weight: inherit;
+	outline: 0
+}
+
+button {
+	-webkit-appearance: none;
+	border: 0;
+	background: 0 0
+}
+
+a {
+	-webkit-touch-callout: none;
+	text-decoration: none
+}
+
+:focus {
+	outline: 0;
+	-webkit-tap-highlight-color: transparent
+}
+
+em,
+i {
+	font-style: normal
+}
+/*!app_core/index.css*/
+img {
+	width: 100%;
+}
+
+.zk-border-t {
+	border-top: 1px solid #e0e0e0; /*px*/
+}
+
+.zk-border-b {
+	border-bottom: 1px solid #e0e0e0; /*px*/
+}
+
+.zk-border-tb {
+	border-top: #e0e0e0 1px solid;
+	/*px*/
+	border-bottom: #e0e0e0 1px solid;
+	/*px*/
+	background-image: none
+}
+
+.zk-border-l {
+	border-left: 1px solid #e0e0e0; /*px*/
+}
+
+.zk-border-r {
+	border-right: 1px solid #e0e0e0; /*px*/
+}
+
+.zk-border {
+	border: 1px solid #e0e0e0; /*px*/
+}

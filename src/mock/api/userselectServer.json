@@ -1,0 +1,14 @@
+{
+    "pageNo":1,
+    "pageSize":20,
+    "totalCount":0,
+    "totalPage":0,
+    "extraData":null,
+    "msg":0,
+    "status":0,
+    "data":
+    {
+        "userKeys":"5000",
+        "serverRealName":"吾友朋家开的"
+    }
+}

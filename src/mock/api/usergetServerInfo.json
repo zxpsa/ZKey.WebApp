@@ -1,0 +1,17 @@
+{
+    "pageNo":1,
+    "pageSize":20,
+    "totalCount":0,
+    "totalPage":0,
+    "extraData":null,
+    "msg":0,
+    "status":0,
+    "data":
+    {
+        "serverUserId":"100",
+        "serverType":"1",
+        "serverPhone":"48280816",
+        "serverRealName":"吾友朋",
+        "serverHeadPic":"http://img2.imgtn.bdimg.com/it/u=1254758867,2682543633&fm=23&gp=0.jpg"
+    }
+}

@@ -1,0 +1,24 @@
+{
+    "pageNo":1,
+    "pageSize":20,
+    "totalCount":0,
+    "totalPage":0,
+    "extraData":null,
+    "msg":0,
+    "status":0,
+    "data":
+    [
+     {
+     "logisticsCode":"100",
+     "logisticsName":"申通快递"
+     },
+     {
+     "logisticsCode":"101",
+     "logisticsName":"元通快递"
+     },
+     {
+     "logisticsCode":"102",
+     "logisticsName":"邮政EMS"
+     }
+     ]
+}

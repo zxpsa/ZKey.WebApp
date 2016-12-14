@@ -1,0 +1,27 @@
+.confirm-order {
+	background-color: #F5F5F5;
+}
+
+.confirm-order .tab{
+	height: 39px;
+	line-height: 39px;
+	font-size: 15px;
+	text-align: center;
+	background-color: white;
+	
+}
+
+.confirm-order .tab span{
+	display: block;
+	float: left;
+	/*width: 100px;*/
+	margin-left: auto;
+	margin-right: auto;
+}
+.confirm-order .tab span.active {
+	height: 100%;
+	font-weight: bold;
+	color:#FBBF36;
+	border-bottom: 2px solid #FBBF36;
+}
+

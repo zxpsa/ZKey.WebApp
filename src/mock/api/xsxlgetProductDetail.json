@@ -1,0 +1,33 @@
+{
+    "pageNo":1,
+    "pageSize":20,
+    "totalCount":0,
+    "totalPage":0,
+    "extraData":null,
+    "msg":0,
+    "status":0,
+    "data":
+    {
+        "productId":"1",
+        "productVer":"1.0.0",
+        "sellUserId":"100",
+        "factoryId":"11",
+        "factoryAddress":"重庆市北部新区大竹林康庄美地",
+        "productName":"张鸭子卤烤鸭",
+        "productImgList":["http://xcmn.jsyks.com/photo/img.xgo-img.com.cn/pics/1505/1504435.jpg","http://pic29.nipic.com/20130515/1391526_115902145000_2.jpg","http://img3.imgtn.bdimg.com/it/u=2598835504,72070733&fm=11&gp=0.jpg"],
+        "proxySaleStatus":"1",
+        "canproxyStatus":"0",
+        "productDesc":"很好吃的烤鸭",
+        "postage":200,
+        "productLableList":["好吃到爆","吃货必备","舌尖上的中国"],
+        "productSpecList":[
+                           {
+                           "specId":"1111111",
+                           "specVer":"1.0.0",
+                           "specName":"XXL",
+                           "unitPrice":"100",
+                           "commission":"3"
+                           }],
+        "followStatus":1
+    }
+}

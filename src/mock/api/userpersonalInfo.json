@@ -1,0 +1,19 @@
+{
+    "pageNo":1,
+    "pageSize":20,
+    "totalCount":0,
+    "totalPage":0,
+    "extraData":null,
+    "msg":0,
+    "status":0,
+    "data":
+    {
+        "userHeadPic":"http://img2.imgtn.bdimg.com/it/u=1254758867,2682543633&fm=23&gp=0.jpg",
+        "userNickName":"savior",
+        "userAccount":"13628379881",
+        "realNameStatus":"2",
+        "userRoleId":"1000",
+        "userRoleName":"救世主",
+        "userLabel":["狼人杀","玩的溜"]
+    }
+}

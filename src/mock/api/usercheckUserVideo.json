@@ -1,0 +1,22 @@
+{
+    "pageNo":1,
+    "pageSize":20,
+    "totalCount":0,
+    "totalPage":0,
+    "extraData":null,
+    "msg":0,
+    "status":0,
+    "data":
+    {
+        "action":"动作名称上传图片",
+        "continuedTime":"5000",
+        "userServerPic":"http://img5.imgtn.bdimg.com/it/u=584349984,1653562319&fm=21&gp=0.jpg",
+        "userServerVideo":"http://img5.imgtn.bdimg.com/it/u=584349984,1653562319&fm=21&gp=0.jpg",
+        "userUrgent":"0",
+        "videoStatus":"1",
+        "videoAction":"开启认证",
+        "videoHint":"请冲qq会员加急",
+        "videoStatement":"认证中，补充材料可提升速度",
+        "msg":"1000后审核可以通过"
+    }
+}

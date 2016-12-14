@@ -1,0 +1,23 @@
+{
+    "pageNo":1,
+    "pageSize":20,
+    "totalCount":0,
+    "totalPage":0,
+    "extraData":null,
+    "msg":0,
+    "status":0,
+    "data":
+    {
+        "uspId":"100",
+        "uspName":"杨静",
+        "uspPhone":"13628379881",
+        "provinceCode":"100",
+        "cityCode":"101",
+        "districtCode":"102",
+        "uspprovince":"重庆",
+        "uspcity":"重庆市",
+        "uspdistrict":"万盛区",
+        "uspAddress":"和平二村",
+        "zipCode":"5000"
+    }
+}

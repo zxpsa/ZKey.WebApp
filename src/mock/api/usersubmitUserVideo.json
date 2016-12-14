@@ -1,0 +1,17 @@
+{
+    "pageNo":1,
+    "pageSize":20,
+    "totalCount":0,
+    "totalPage":0,
+    "extraData":null,
+    "msg":0,
+    "status":0,
+    "data":
+    {
+        "action":"动作名称",
+        "continuedTime":"5000",
+        "userServerPic":"http://awb.img.xmtbang.com/img/uploadnew/201510/19/5bfcb68813bd452cb978398d6ffe145f.jpg",
+        "userServerVideo":"",
+        "userUrgent":"0"
+    }
+}
