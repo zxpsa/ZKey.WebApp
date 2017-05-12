@@ -14,7 +14,8 @@
      "maxLimit":"50000",
      "minLimit":"1",
      "aisleType":"api",
-     "usingQrCode":"www.baidu.com"
+     "usingQrCode":"www.baidu.com",
+     "payRate":"0.12"
      },
      {
      "aisleId":"2",
