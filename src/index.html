@@ -1,9 +1,8 @@
 <!DOCTYPE html>
 <html>
-
 	<head>
 		<meta charset="utf-8">
-		<title></title>
+		<title>	</title>
 		<meta name="keywords" content="">
 		<meta name="description" content="">
 		<!--加载公共Head部分 编译时整体替换-->
@@ -18,27 +17,12 @@
     	<![endif]-->
 		<link rel="shortcut icon" href="favicon.ico">
 	</head>
-
 	<body>
 		<div id="app">
-			<h1>Hello App!</h1>
-			<p>
-				<!-- 使用 router-link 组件来导航. -->
-				<!-- 通过传入 `to` 属性指定链接. -->
-				<!-- <router-link> 默认会被渲染成一个 `<a>` 标签 -->
-				<router-link to="/spa">Go to spa</router-link>
-				<router-link to="/spa1/AAA/123">Go to spa1</router-link>
-				<a @click="toSpa1">啊啊啊啊</a>
-			</p>
-			<!-- 路由出口 -->
-			<!-- 路由匹配到的组件将渲染在这里 -->
 			<router-view></router-view>
-		</div>
+		</div>		
 		<script type="text/javascript">
-			new Vue(require('app_common/app'));
-//			require.async('common/js/app',function(a){
-//				new Vue(a);
-//			});
+			$App.ViewModel(require('app_common/app'));
 		</script>
 	</body>
 

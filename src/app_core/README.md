@@ -176,6 +176,7 @@ maypp/
 | |-- 个人中心/ # 业务模块a
 | | |-- common/ # 业务模块a的公共资源
 | | | |-- services/ # 业务模块a的公共服务
+| | | |-- models/ # 业务模块a的模型
 | | | |-- components # 业务模块a的公共组件
 | | | |-- directives/ # 业务模块a的公共指令
 | | |-- page_a.html # 页面
@@ -183,6 +184,7 @@ maypp/
 | | |-- 用户注册/ # 业务模块"个人中心"的子模块用户注册
 | | | |-- common/ # 业务模块a的公共资源
 | | | | |-- services/ # 业务模块a的公共服务
+| | | | |-- models/ # 业务模块a的模型
 | | | | |-- components # 业务模块a的公共组件
 | | | | |-- directives/ # 业务模块a的公共指令
 | |-- demo_b/ # 业务模块b

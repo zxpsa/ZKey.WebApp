@@ -138,7 +138,7 @@ button {
 }
 
 body {
-	font-family: "Helvetica Neue","微软雅黑", system, Helvetica, STHeiTi, sans-serif;
+	font-family: "Helvetica Neue","microsoft yahei", system, Helvetica, STHeiTi, sans-serif;
 	line-height: 1.5;
 	color: #000;
 	background-color: #f8f8f8;
@@ -219,22 +219,69 @@ em,
 i {
 	font-style: normal
 }
+/*!app_core/css/xsf_layer.css*/
+.layui-m-layer0 .zk-layer {
+	width: 73.56%;
+}
+.zk-layer .layui-m-layerbtn{
+	padding-bottom: 20px;
+	padding-top: 20px;
+	margin-left: auto;
+	margin-right: auto;
+	background-color: #FFFFFF;
+	width: 84.153%;
+	
+}
+
+/*内容padding*/
+.zk-layer .layui-m-layercont{
+	font-size: 16px;
+	padding: 30px;
+	padding-left: 20px;
+	padding-right: 20px;
+}
+
+/*按钮通用样式*/
+.zk-layer .layui-m-layerbtn span{
+	font-size: 17px;
+	font-weight: bold;
+	color: #FFFFFF;
+	border-radius: 6px;
+}
+
+/*取消按钮*/
+.zk-layer .layui-m-layerbtn span[no]{
+	border-right: 0px;
+	background-color: #FBBF36;
+	width: 105px;
+	margin-right: 5px;
+}
+
+/*确定按钮*/
+.zk-layer .layui-m-layerbtn span[yes]{
+	background-color: #FBBF36;
+	width: 105px;
+	margin-left: 5px;
+}
+
+.zk-layer .layui-m-layerbtn span:active{
+	background-color: #AA8225;
+}
 /*!app_core/index.css*/
 img {
 	width: 100%;
 }
 
-.zk-shade{
-	
-}
-
+/**
+ * 遮罩层
+ */
 .zk-shade-base{
 	height: 100%;
 	width: 100%;
 	position: fixed;
 	display:block;
 	top: 0px;
-	 left: 0;
+	left: 0;
     z-index: 900;
 	background-color: black;
 	filter:alpha(opacity=70); /*IE滤镜，透明度50%*/
@@ -259,38 +306,42 @@ img {
 }
 
 .zk-border-t {
-	border-top: 1px solid #e0e0e0;
+	border-top: 1px solid #E0E0E0;
 	/*px*/
 }
 
 .zk-border-b {
-	border-bottom: 1px solid #e0e0e0;
+	border-bottom: 1px solid #E0E0E0;
 	/*px*/
 }
 
 .zk-border-tb {
-	border-top:  1px solid #e0e0e0;
+	border-top:  1px solid #E0E0E0;
 	/*px*/
-	border-bottom:  1px solid #e0e0e0;
+	border-bottom:  1px solid #E0E0E0;
 	/*px*/
 	background-image: none
 }
 
 .zk-border-l {
-	border-left: 1px solid #e0e0e0;
+	border-left: 1px solid #E0E0E0;
 	/*px*/
 }
 
 .zk-border-r {
-	border-right: 1px solid #e0e0e0;
+	border-right: 1px solid #E0E0E0;
 	/*px*/
 }
 
 .zk-border {
-	border: 1px solid #e0e0e0;
+	border: 1px solid #E0E0E0;
 	/*px*/
 }
 
 [v-cloak] {
   display: none;
 }
+
+
+
+

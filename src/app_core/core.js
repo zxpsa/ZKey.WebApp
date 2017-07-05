@@ -1,3 +1,351 @@
+;/*!app_core/libs/es6-promise/promise.js*/
+(function(global){
+
+//
+// Check for native Promise and it has correct interface
+//
+
+var NativePromise = global['Promise'];
+var nativePromiseSupported =
+  NativePromise &&
+  // Some of these methods are missing from
+  // Firefox/Chrome experimental implementations
+  'resolve' in NativePromise &&
+  'reject' in NativePromise &&
+  'all' in NativePromise &&
+  'race' in NativePromise &&
+  // Older version of the spec had a resolver object
+  // as the arg rather than a function
+  (function(){
+    var resolve;
+    new NativePromise(function(r){ resolve = r; });
+    return typeof resolve === 'function';
+  })();
+
+
+//
+// export if necessary
+//
+
+if (typeof exports !== 'undefined' && exports)
+{
+  // node.js
+  exports.Promise = nativePromiseSupported ? NativePromise : Promise;
+  exports.Polyfill = Promise;
+}
+else
+{
+  // AMD
+  if (typeof define == 'function' && define.amd)
+  {
+    define(function(){
+      return nativePromiseSupported ? NativePromise : Promise;
+    });
+  }
+  else
+  {
+    // in browser add to global
+    if (!nativePromiseSupported)
+      global['Promise'] = Promise;
+  }
+}
+
+
+//
+// Polyfill
+//
+
+var PENDING = 'pending';
+var SEALED = 'sealed';
+var FULFILLED = 'fulfilled';
+var REJECTED = 'rejected';
+var NOOP = function(){};
+
+function isArray(value) {
+  return Object.prototype.toString.call(value) === '[object Array]';
+}
+
+// async calls
+var asyncSetTimer = typeof setImmediate !== 'undefined' ? setImmediate : setTimeout;
+var asyncQueue = [];
+var asyncTimer;
+
+function asyncFlush(){
+  // run promise callbacks
+  for (var i = 0; i < asyncQueue.length; i++)
+    asyncQueue[i][0](asyncQueue[i][1]);
+
+  // reset async asyncQueue
+  asyncQueue = [];
+  asyncTimer = false;
+}
+
+function asyncCall(callback, arg){
+  asyncQueue.push([callback, arg]);
+
+  if (!asyncTimer)
+  {
+    asyncTimer = true;
+    asyncSetTimer(asyncFlush, 0);
+  }
+}
+
+
+function invokeResolver(resolver, promise) {
+  function resolvePromise(value) {
+    resolve(promise, value);
+  }
+
+  function rejectPromise(reason) {
+    reject(promise, reason);
+  }
+
+  try {
+    resolver(resolvePromise, rejectPromise);
+  } catch(e) {
+    rejectPromise(e);
+  }
+}
+
+function invokeCallback(subscriber){
+  var owner = subscriber.owner;
+  var settled = owner.state_;
+  var value = owner.data_;  
+  var callback = subscriber[settled];
+  var promise = subscriber.then;
+
+  if (typeof callback === 'function')
+  {
+    settled = FULFILLED;
+    try {
+      value = callback(value);
+    } catch(e) {
+      reject(promise, e);
+    }
+  }
+
+  if (!handleThenable(promise, value))
+  {
+    if (settled === FULFILLED)
+      resolve(promise, value);
+
+    if (settled === REJECTED)
+      reject(promise, value);
+  }
+}
+
+function handleThenable(promise, value) {
+  var resolved;
+
+  try {
+    if (promise === value)
+      throw new TypeError('A promises callback cannot return that same promise.');
+
+    if (value && (typeof value === 'function' || typeof value === 'object'))
+    {
+      var then = value.then;  // then should be retrived only once
+
+      if (typeof then === 'function')
+      {
+        then.call(value, function(val){
+          if (!resolved)
+          {
+            resolved = true;
+
+            if (value !== val)
+              resolve(promise, val);
+            else
+              fulfill(promise, val);
+          }
+        }, function(reason){
+          if (!resolved)
+          {
+            resolved = true;
+
+            reject(promise, reason);
+          }
+        });
+
+        return true;
+      }
+    }
+  } catch (e) {
+    if (!resolved)
+      reject(promise, e);
+
+    return true;
+  }
+
+  return false;
+}
+
+function resolve(promise, value){
+  if (promise === value || !handleThenable(promise, value))
+    fulfill(promise, value);
+}
+
+function fulfill(promise, value){
+  if (promise.state_ === PENDING)
+  {
+    promise.state_ = SEALED;
+    promise.data_ = value;
+
+    asyncCall(publishFulfillment, promise);
+  }
+}
+
+function reject(promise, reason){
+  if (promise.state_ === PENDING)
+  {
+    promise.state_ = SEALED;
+    promise.data_ = reason;
+
+    asyncCall(publishRejection, promise);
+  }
+}
+
+function publish(promise) {
+  var callbacks = promise.then_;
+  promise.then_ = undefined;
+
+  for (var i = 0; i < callbacks.length; i++) {
+    invokeCallback(callbacks[i]);
+  }
+}
+
+function publishFulfillment(promise){
+  promise.state_ = FULFILLED;
+  publish(promise);
+}
+
+function publishRejection(promise){
+  promise.state_ = REJECTED;
+  publish(promise);
+}
+
+/**
+* @class
+*/
+function Promise(resolver){
+  if (typeof resolver !== 'function')
+    throw new TypeError('Promise constructor takes a function argument');
+
+  if (this instanceof Promise === false)
+    throw new TypeError('Failed to construct \'Promise\': Please use the \'new\' operator, this object constructor cannot be called as a function.');
+
+  this.then_ = [];
+
+  invokeResolver(resolver, this);
+}
+
+Promise.prototype = {
+  constructor: Promise,
+
+  state_: PENDING,
+  then_: null,
+  data_: undefined,
+
+  then: function(onFulfillment, onRejection){
+    var subscriber = {
+      owner: this,
+      then: new this.constructor(NOOP),
+      fulfilled: onFulfillment,
+      rejected: onRejection
+    };
+
+    if (this.state_ === FULFILLED || this.state_ === REJECTED)
+    {
+      // already resolved, call callback async
+      asyncCall(invokeCallback, subscriber);
+    }
+    else
+    {
+      // subscribe
+      this.then_.push(subscriber);
+    }
+
+    return subscriber.then;
+  },
+
+  'catch': function(onRejection) {
+    return this.then(null, onRejection);
+  }
+};
+
+Promise.all = function(promises){
+  var Class = this;
+
+  if (!isArray(promises))
+    throw new TypeError('You must pass an array to Promise.all().');
+
+  return new Class(function(resolve, reject){
+    var results = [];
+    var remaining = 0;
+
+    function resolver(index){
+      remaining++;
+      return function(value){
+        results[index] = value;
+        if (!--remaining)
+          resolve(results);
+      };
+    }
+
+    for (var i = 0, promise; i < promises.length; i++)
+    {
+      promise = promises[i];
+
+      if (promise && typeof promise.then === 'function')
+        promise.then(resolver(i), reject);
+      else
+        results[i] = promise;
+    }
+
+    if (!remaining)
+      resolve(results);
+  });
+};
+
+Promise.race = function(promises){
+  var Class = this;
+
+  if (!isArray(promises))
+    throw new TypeError('You must pass an array to Promise.race().');
+
+  return new Class(function(resolve, reject) {
+    for (var i = 0, promise; i < promises.length; i++)
+    {
+      promise = promises[i];
+
+      if (promise && typeof promise.then === 'function')
+        promise.then(resolve, reject);
+      else
+        resolve(promise);
+    }
+  });
+};
+
+Promise.resolve = function(value){
+  var Class = this;
+
+  if (value && typeof value === 'object' && value.constructor === Class)
+    return value;
+
+  return new Class(function(resolve){
+    resolve(value);
+  });
+};
+
+Promise.reject = function(reason){
+  var Class = this;
+
+  return new Class(function(resolve, reject){
+    reject(reason);
+  });
+};
+
+})(typeof window != 'undefined' ? window : typeof global != 'undefined' ? global : typeof self != 'undefined' ? self : this);
+
 ;/*!app_core/libs/layer_mobile/layer.js*/
 /*! layer mobile-v2.0 弹层组件移动版 License LGPL http://layer.layui.com/mobile By 贤心 */ ;
 ! function(a) {
@@ -11674,12 +12022,15 @@ return index;
  * 常用类
  * @author 裴胜 zxpsa@126.com
  * 时间:2014-9-19下午1:16:00
- * V1.203
+ * V1.204
  * 修改:1.2015年07月18日 增加获取(标准格式)当前时间的方法
  * 新增Storage
  * 修改:1.2016年09月02日 Storage
  * 新增游览器检测
  * 新增编码处理
+ * 2017-03-26 22:38:03 @author PS
+ * 1.去除JSON序列化兼容[不在兼容IE6,7,8]
+ * 2.新增rem2px转换 
  */
 
 /**
@@ -11860,7 +12211,37 @@ Date.prototype.diff = function(objDate, interval) {
  */
 var docId = function(id) {
 	return document.getElementById(id);
-}
+};
+
+/**
+ * 日志记录
+ * @param {*} content
+ */
+window.$log=function(content,data){
+	if($App.Debug){
+		if(typeof data=="object"){
+			try {
+				//对data进行尝试序列化
+				data=JSON.stringify(data);
+			} catch (error) {
+				// 序列化失败则直接报出data
+				alert(data);
+				return;
+			}
+		}
+		if (!data) {
+			data="";
+		}
+		if (typeof content!="object") {
+			content+=data;	
+		}
+		if($App.Debug==2){
+			alert(content);
+		}else{
+			console.log(content);
+		}
+	}
+};
 
 /**
  * 通用工具类
@@ -12218,9 +12599,12 @@ General.compObj = function(obj1, obj2) {
  * @param {string} name
  */
 General.getUrlParam = function(name) {
-	var search = window.location.search;
-	if(search.indexOf("?") > -1) {
-		search = search.substring(1);
+	var search = window.location.href;
+	var index=search.indexOf("?");
+	if(index > -1) {
+		search = search.substring(index+1);
+		search=search.split("#");//去除最后一个 #避免数据污染
+		search=search[0];
 		var parArr = search.split("&");
 		for(var i = 0; i < parArr.length; i++) {
 			if(parArr[i].split("=")[0] == name) {
@@ -12513,8 +12897,17 @@ General.delCookie = function(key) {
 		document.cookie = key + "=" + cval + ";expires=" + exp.toGMTString();
 }
 
-//屏幕对象
-//General.screen=$App.screen;
+/**
+ * rem单位转换为运行中px单位
+ * @param {String/Number} rem
+ */
+General.remToPX=function(rem){
+	if (typeof rem=="string") {
+		rem=rem.replace("rem","");
+	}
+	var val = lib.flexible.rem2px(rem);
+	return val;
+}
 
 /**
  * 游览器session对象
@@ -12656,96 +13049,619 @@ General.deviceInfo = (function() {
 
 //提供通用方法 简写
 window.$G = General;
+;/*!app_core/js/zk_app_info.js*/
+function ZKAppInfo(_callback) {
+    var _self = this;
+    // debugger
+    var info = {
+        // 是否处于原生WebView中
+        isInWebView: null,
+        // 当前App版本字符串
+        appVersion: null,
+        // 当前App版本号
+        appVersionNum: null,
+        // 点钞音效 0关闭  1开启
+        countingAudio: 0,
+        // 收款音效 0关闭  1开启
+        collectionAudio: 0
+    };
+    // 使用额外配置的App信息
+    info = $G.objSetDefaultVal($App.Info, info);
+    if (info.isInWebView) {
+        //尝试调用App 公共初始设置接口 若调用失败 则不做任何处理
+        $HyApp.excute("HYACommonCtrl", "init", {
+            title:"兴手付",
+            stopInjectJS:1
+        });
+        //尝试调用App 若调用失败 则默认按照支持的最低版本3.0.5运行
+        $HyApp.excute("HYAMySetting", "get", null, function (result) {
+            if (result.status != 0) {
+                $log(result);
+                return false;
+            }
+            info.countingAudio = result.data.countingAudio;
+            info.collectionAudio = result.data.collectionAudio;
+            info.appVersion = result.data.appVersion;
+            var version = result.data.appVersion;
+            var array = version.split(".");
+            for (var index = 0; index < array.length; index++) {
+                if (array[index].length < 2) {
+                    array[index] = "0" + array[index];
+                }
+            }
+            version = array.join("");
+            version = parseInt(version);
+            info.appVersionNum = version;
+            _callback(info);
+        }, function (code, desc) {
+            info.appVersion = "3.0.3";
+            info.appVersionNum = 30003;
+            $log("尝试调用App获取App信息失败！视为老版本兼容处理！");
+            _callback(info);
+        });
+    }else{
+        info.appVersion = "3.0.5";
+        info.appVersionNum = 30005;
+        _callback(info);
+    }
+}
+;/*!app_core/js/zk_http.js*/
+/**
+ * 网路请求
+ * 2017-04-14 14:43:15 
+ * @author PS
+ * @param {Object} appInfo app相关信息 
+ */
+function ZKHttp(userInfo, appInfo) {
+	var token = userInfo.token;
+	var userId = userInfo.userId;
+	var mct = 9;
+	if (appInfo.isInWebView) {
+		if ($G.deviceInfo.isSystem.ios) {
+			mct = 2;
+		} else if ($G.deviceInfo.isSystem.android) {
+			mct = 1;
+		}
+	}
+
+	var mst = mct * 10 + 2;
+	//最低Http版本为3.0.5
+	var verStr = $App.lessAppVer("3.0.5") ? "3.0.5" : appInfo.appVersion;
+	var appVerNumStr = $App.lessAppVer("3.0.5") ? "305" : appInfo.appVersion.replaceAll("\\.", "");
+	$.ajaxSetup({
+		contentType: "application/json;charset=utf-8",
+		processData: false,
+		headers: {
+			"token": token,
+			"m-nw": "",
+			"m-iv": verStr,
+			"m-cv": verStr,
+			"m-ct": mct,
+			"m-st": mst,
+			"m-ui": userId,
+			"m-cw": "",
+			"m-ch": "",
+			"m-ii": "",
+			"m-ci": "",
+			"m-lng": "108.2032",
+			"m-lat": "31.1234",
+			"m-up": "",
+			"m-uc": "",
+			"m-ud": "",
+			"appVersion": appVerNumStr
+		},
+		dataType: "json"
+	});
+
+	window.$App_httpStack = {};
+	/**
+	 * ajax参数设置默认值
+	 */
+	$.ajaxPrefilter(function (options, originalOptions, jqXHR) {
+		if (options.commonDel == false) { //是否设置禁用公共 处理
+			return false;
+		}
+		//若已存在相同域名请求则放弃已发起请求
+		if ($App_httpStack[options.url]) {
+			//放弃之后的请求
+			jqXHR.abort();
+			return false;
+		}
+		//记录当前请求对象
+		$App_httpStack[options.url] = true;
+
+		//发起请求时显示加载界面
+		var loading = null;
+		var timeIndex;
+		if (options.loading != false) {
+			timeIndex = setTimeout(function () {
+				loading = $App.loading("加载中...");
+			}, 500);
+		}
+
+		//自定义传输数据的格式
+		if (typeof options.data == "object" && options.processData == false) {
+			if (options.type == "get") {
+				options.data = $G.toQueryString(options.data);
+			} else {
+				if (options.convertNull === false) {
+					options.data = JSON.stringify(options.data);
+				} else {
+					options.data = JSON.stringify(options.data, handlePostSwitchData);
+				}
+			}
+		}
+
+		var complete = options.complete;
+		options.complete = function (xhr, status) {
+			delete $App_httpStack[options.url];
+			//清除计时器
+			clearTimeout(timeIndex);
+			if (loading != null) {
+				$App.closeLoding(loading);
+			}
+			if (!isEmpty(complete)) {
+				complete(xhr, status);
+			}
+		}
+		if (options.useSuccessDel != false) {
+			var success = options.success;
+			options.success = function (result, status, xhr) {
+				if (result.status != undefined) {
+					if (result.status == 1 || result.status == "1") {
+						$App.msg(result.msg);
+
+					} else if (result.status == -1 || result.status == "-1") {
+						$App.msg("服务器异常,请联系管理员！");
+
+					} else if (result.status == 2 || result.status == "2") {
+						$App.msg(result.msg);
+
+					} else if (result.status == 3) {
+						$App.msg("无权限或者未登录！请重新登陆");
+						setTimeout(function () {
+							if ($App.Info.isInWebView) {
+								if ($G.deviceInfo.isSystem.ios) {
+									$App.go("XSFAPP://ClassName/XSFLoginViewController");
+								} else {
+									$App.go({
+										path: "XSFAPP://com/shoufu/platform/activity/login/LoginActivity",
+										query: {
+											'is_relogin': true
+										},
+										isTopGo: true
+									});
+								}
+							} else {
+								$App.go({
+									path: $App.RootUrl.replace("/collect_payment", ""),
+									isTopGo: true
+								});
+							}
+						}, 1000);
+						return false;
+					}
+				} else {
+					if (result.indexOf("请登录") >= 0) {
+						$App.msg("无权限或者未登录！请重新登陆");
+						setTimeout(function () {
+							$App.go({
+								path: $App.RootUrl.replace("/statics", ""),
+								isTopGo: true
+							});
+						}, 1000);
+						return false;
+					}
+				}
+				if (success != undefined) {
+					try {
+						//执行自定义样式
+						success(result, status, xhr);
+					} catch (error) {
+						//报错也去掉加载loading
+						if (loading != null) {
+							$App.closeLoding(loading);
+						}
+						console.log(error);
+					}
+				}
+			};
+		}
+
+		var error = options.error;
+		options.error = function (XMLHttpRequest, textStatus, errorThrown) {
+			httpErrorCommonDel(XMLHttpRequest, textStatus, errorThrown);
+			if (error != undefined) {
+				try {
+					//执行自定义样式
+					error(XMLHttpRequest, textStatus, errorThrown);
+				} catch (error) {
+					//报错也去掉加载loading
+					if (loading != null) {
+						$App.closeLoding(loading);
+					}
+				}
+			}
+		};
+	});
+
+	function httpErrorCommonDel(XMLHttpRequest, textStatus, errorThrown) {
+		var status = XMLHttpRequest.status;
+		if (status >= 401 && status < 404) {
+			$App.msg("未登录！请重新登陆");
+
+			setTimeout(function () {
+				$App.go({
+					path: $App.RootUrl.replace("/statics", "") + '/login.html',
+					isTopGo: true
+				});
+			}, 1000);
+		} else if (status == 500) {
+			$App.msg("服务器异常,请联系管理员!");
+		} else if (status == 404) {
+			$App.msg("服务器异常,请联系管理员!");
+		} else if (status == 200) {
+			if (XMLHttpRequest.responseURL != "") {
+				window.top.location.href = XMLHttpRequest.responseURL
+			} else {
+				$App.msg("解析数据失败!");
+			}
+		} else {
+			if (textStatus == "timeout") {
+				$App.msg("网络超时！请稍后再试");
+				return;
+			}
+			if (textStatus == "parsererror") {
+				//错误或者解析异常
+				$App.msg("网络或服务器异常,请稍候再试!");
+				return;
+			}
+
+			if (textStatus == "abort") {
+				//强行终止
+			} else {
+				$App.msg("错误请求");
+			}
+		}
+	}
+
+	/**
+	 * 处理每一项提交的数据的
+	 * @param {Object} key
+	 * @param {Object} value
+	 */
+	function handlePostSwitchData(key, value) {
+		if (value === "") {
+			value = null;
+		}
+		return value;
+	}
+}
+;/*!app_core/js/zk_observer.js*/
+/**
+ * 通知中心 / 发布订阅中心
+ * 2017-04-12 13:54:51
+ * @author PS
+ */
+function ZKObserver() {
+	var _self=this;
+	//被观察者列表
+	var observables = {
+		"onZKBack": []
+	};
+
+	// 主题集合
+	var subjects = {};
+	
+	/**
+	 * 添加观察者
+	 * @param {String} subjectName 主题名称
+	 * @param {Object} _func 主题变动时回调 
+	 * @param {String} observerName 观察者
+	 */
+	_self.addObserver = function(subjectName,_func,observerName) {
+		if(!subjects[subjectName]){
+			subjects[subjectName]={
+				observers:{},
+				func:[]
+			};
+		}
+		// 若观察者不是匿名观察者的话
+		if(observerName){
+			if(!subjects[subjectName].observers[observerName]){
+				subjects[subjectName].observers[observerName]={};
+			}
+
+			if(!subjects[subjectName].observers[observerName].func){
+				subjects[subjectName].observers[observerName].func=[];
+			}
+
+			subjects[subjectName].observers[observerName].func.push(_func);
+		}
+		//添加主题变动时回调 
+		subjects[subjectName].func.push(_func);
+	}
+
+	_self.publish=function(subjectName,subjectData,observerName){
+		setTimeout(function(){
+			if(!subjects[subjectName]){
+				return  false;
+			}
+			if(!observerName){
+				for(var i=0,len=subjects[subjectName].func.length;i<len;i++){
+					subjects[subjectName].func[i](subjectData);
+				}
+			}else{
+				//向指定观察者推送信息
+				for(var i=0,len=subjects[subjectName][observerName].func.length;i<len;i++){
+					subjects[subjectName][observerName].func[i](subjectData,observerName);
+				}
+			}
+		},1);
+	}
+
+	/**
+	 * 删除所有观察者
+	 */
+	_self.removeObserver=function(subjectName){
+		if(subjects[subjectName]){
+			delete subjects[subjectName];
+		}else{
+			$log("主题不存在",subjectName);
+		}
+	}
+
+//	if(window.onZKBack) {
+//		window.onZKBack(); 
+//	} else { 
+//		var loadFunc; 
+//		if(window.onload) { 
+//			loadFunc = window.onload; 
+//		} window.onload = function() { 
+//			try { if(loadFunc) { loadFunc();
+//			} window.onZKBack(); } catch() {} 
+//		} 
+//	}
+	// ZKObserver.addObserver("sucess",function(){
+		
+	// })
+}
+
+;/*!app_core/js/hyapp.js*/
+/**
+ * 前端与Native通信中间件
+ * 2017-04-12 13:54:18 
+ * @author PS
+ */
+function HyApp() {
+	var _self = this;
+	var requests = {};
+	//方法超时时间
+	var timeOut = 5000;
+
+	/**
+	 * 
+	 * @param {String} className 类名
+	 * @param {String} methodName 方法名
+	 * @param {Object} params 参数
+	 * @param {Function} sucessCallback
+	 * @param {Function} errorCall(错误编码,描述)
+	 */
+	_self.excute = function (className, methodName, params, sucessCallback, errorCallback) {
+		//		请求唯一标识ID
+		var id = "HyApp_re_" + $App.getCode();
+		if ($App.Info.isInWebView) {
+			//			将请求信息保存到请求队列中
+			requests[id] = {
+				className: className,
+				methodName: methodName,
+				sucessCallback: function(result){
+					if (sucessCallback) {
+						$log("原生返回:", result);
+						sucessCallback(result);
+					}
+				},
+				errorCallback: function (code, result) {
+					$log(code, result);
+					clearTimeout(requests[id].timer);
+					if (errorCallback) {
+						errorCallback(code, result);
+					}
+				}
+			};
+			setTimeout(function () {
+				try {
+					if ($G.deviceInfo.isSystem.ios) {
+						var body = {
+							className: className,
+							methodName: methodName,
+							id: id,
+							params: params
+						};
+						$log("调用原生:", body);
+						window.webkit.messageHandlers.HyAppNative.postMessage(JSON.stringify(body));
+					} else {
+						if (typeof params != "object") {
+							throw new Error("params 必须是对象");
+						} else {
+							params = JSON.stringify(params);
+						}
+						$log("调用原生:", params);
+						window.HyAppNative.excute(className, methodName, id, params);
+					}
+				} catch (e) {
+					$log(e);
+					requests[id].errorCallback(404, "调用原生Api失败！请求Id:"+id);
+				}
+			}, 1);
+
+
+			requests[id].timer = setTimeout(function () {
+				requests[id].errorCallback(504,"请求Native超时！请求Id:"+id);
+				delete requests[id];
+			}, timeOut);
+		} else {
+			$log("请在内嵌App中运行该程序！");
+		}
+	}
+
+	/**
+	 * 原生返回结果
+	 * @param {Object} id	唯一标识ID
+	 * @param {Object} stateEnum 
+	 * @param {Object} result
+	 */
+	_self.nativeSendResult = function (id, result) {
+		setTimeout(function () {
+			try {
+				if (!requests.hasOwnProperty(id)) {
+					throw new Error("请求不存在");
+				}
+				clearTimeout(requests[id].timer);
+				if (typeof result != "string") {
+					throw new Error("result 必须是JSON字符串");
+				} else {
+					result = JSON.parse(result);
+				}
+				requests[id].sucessCallback(result);
+			} catch (e) {
+				requests[id].errorCallback(500,e);
+			}
+		}, 1);
+	}
+
+	/**
+	 * 发送通知
+	 * @param {Object} key
+	 * @param {Object} result
+	 */
+	_self.publish = function (key, result) {
+		setTimeout(function () {
+			if (typeof result != "string") {
+				throw new Error("result 必须是JSON字符串");
+			} else {
+				$log(result);
+				result = JSON.parse(result);
+				$Observer.publish(key, result);
+			}
+		}, 1);
+	};
+
+
+}
+;/*!app_core/js/bss_common.js*/
+/**
+ * 业务公共类
+ * 作者：PS    
+ * 日期：2016-12-02
+ */
+/**
+ * 获取通用字典
+ * 短语key存在则返回具体内容,短语Key不存在则直接返回字典对应短语列表
+ * @param {String} key
+ * @param {String} phraseKey
+ * @param {Function} calback(val)
+ */
+$App.getDictionary = function (dictKey, phraseKey, calback, needConstantly) {
+	if (typeof phraseKey == "function") {
+		calback = phraseKey;
+		phraseKey = null;
+	}
+	$.post($App.ApiRoot + "/operator/getDictionaryItemList?_t="+Math.random()*10000, {
+		dictionaryCode: dictKey
+	}, function (result, status, xhr) {
+		if (result.status != 0) {
+			return false;
+		}
+		var data;
+		var array = result.data;
+		if (phraseKey) {
+			for (var index = 0; index < array.length; index++) {
+				var item = array[index];
+				if (item.itemCode == phraseKey){
+					data = item;
+					break;
+				} 
+			}
+		} else {
+			data = array;
+		}
+		if (phraseKey) {
+			calback(data);
+		} else {
+			calback(data);
+		}
+	});
+}
 
 /**
- * JSON序列化兼容
+ * 获取内容配置By分类Code
+ * @param {String} code
+ * @param {Function} calback(val)
  */
-var JSON;
-JSON || (JSON = {}), (function() {
-	"use strict";
-
-	function i(n) {
-		return n < 10 ? "0" + n : n
-	}
-
-	function f(n) {
-		return o.lastIndex = 0, o.test(n) ? '"' + n.replace(o, function(n) {
-			var t = s[n];
-			return typeof t == "string" ? t : "\\u" + ("0000" + n.charCodeAt(0).toString(16)).slice(-4)
-		}) + '"' : '"' + n + '"'
-	}
-
-	function r(i, e) {
-		var h, l, c, a, v = n,
-			s, o = e[i];
-		o && typeof o == "object" && typeof o.toJSON == "function" && (o = o.toJSON(i)), typeof t == "function" && (o = t.call(e, i, o));
-		switch(typeof o) {
-			case "string":
-				return f(o);
-			case "number":
-				return isFinite(o) ? String(o) : "null";
-			case "boolean":
-			case "null":
-				return String(o);
-			case "object":
-				if(!o) return "null";
-				n += u, s = [];
-				if(Object.prototype.toString.apply(o) === "[object Array]") {
-					for(a = o.length, h = 0; h < a; h += 1) s[h] = r(h, o) || "null";
-					return c = s.length === 0 ? "[]" : n ? "[\n" + n + s.join(",\n" + n) + "\n" + v + "]" : "[" + s.join(",") + "]", n = v, c
-				}
-				if(t && typeof t == "object")
-					for(a = t.length, h = 0; h < a; h += 1) typeof t[h] == "string" && (l = t[h], c = r(l, o), c && s.push(f(l) + (n ? ": " : ":") + c));
-				else
-					for(l in o) Object.prototype.hasOwnProperty.call(o, l) && (c = r(l, o), c && s.push(f(l) + (n ? ": " : ":") + c));
-				return c = s.length === 0 ? "{}" : n ? "{\n" + n + s.join(",\n" + n) + "\n" + v + "}" : "{" + s.join(",") + "}", n = v, c
+$App.getContentByCategoryCode = function (code, calback) {
+	$.post($App.ApiRoot + "/operator/getContentListByCategoryCode", {
+		categoryCode: code
+	}, function (result, status, xhr) {
+		if (result.status != 0) {
+			return false;
 		}
-	}
-	typeof Date.prototype.toJSON != "function" && (Date.prototype.toJSON = function() {
-		return isFinite(this.valueOf()) ? this.getUTCFullYear() + "-" + i(this.getUTCMonth() + 1) + "-" + i(this.getUTCDate()) + "T" + i(this.getUTCHours()) + ":" + i(this.getUTCMinutes()) + ":" + i(this.getUTCSeconds()) + "Z" : null
-	}, String.prototype.toJSON = Number.prototype.toJSON = Boolean.prototype.toJSON = function() {
-		return this.valueOf()
+		calback(result.data);
 	});
-	var e = /[\u0000\u00ad\u0600-\u0604\u070f\u17b4\u17b5\u200c-\u200f\u2028-\u202f\u2060-\u206f\ufeff\ufff0-\uffff]/g,
-		o = /[\\\"\x00-\x1f\x7f-\x9f\u00ad\u0600-\u0604\u070f\u17b4\u17b5\u200c-\u200f\u2028-\u202f\u2060-\u206f\ufeff\ufff0-\uffff]/g,
-		n, u, s = {
-			"\b": "\\b",
-			"\t": "\\t",
-			"\n": "\\n",
-			"\f": "\\f",
-			"\r": "\\r",
-			'"': '\\"',
-			"\\": "\\\\"
-		},
-		t;
-	typeof JSON.stringify != "function" && (JSON.stringify = function(i, f, e) {
-		var o;
-		n = "", u = "";
-		if(typeof e == "number")
-			for(o = 0; o < e; o += 1) u += " ";
-		else typeof e == "string" && (u = e);
-		t = f;
-		if(f && typeof f != "function" && (typeof f != "object" || typeof f.length != "number")) throw new Error("JSON.stringify");
-		return r("", {
-			"": i
-		})
-	}), typeof JSON.parse != "function" && (JSON.parse = function(n, t) {
-		function r(n, i) {
-			var f, e, u = n[i];
-			if(u && typeof u == "object")
-				for(f in u) Object.prototype.hasOwnProperty.call(u, f) && (e = r(u, f), e !== undefined ? u[f] = e : delete u[f]);
-			return t.call(n, i, u)
+}
+
+/**
+ * 获取内容配置
+ * @param {String} code
+ * @param {Function} calback(val)
+ */
+$App.getContent = function (code, calback) {
+	$.post($App.ApiRoot + "/operator/getContentByContentCode", {
+		contentCode: code
+	}, function (result, status, xhr) {
+		if (result.status != 0) {
+			return false;
 		}
-		var i;
-		n = String(n), e.lastIndex = 0, e.test(n) && (n = n.replace(e, function(n) {
-			return "\\u" + ("0000" + n.charCodeAt(0).toString(16)).slice(-4)
-		}));
-		if(/^[\],:{}\s]*$/.test(n.replace(/\\(?:["\\\/bfnrt]|u[0-9a-fA-F]{4})/g, "@").replace(/"[^"\\\n\r]*"|true|false|null|-?\d+(?:\.\d*)?(?:[eE][+\-]?\d+)?/g, "]").replace(/(?:^|:|,)(?:\s*\[)+/g, ""))) return i = eval("(" + n + ")"), typeof t == "function" ? r({
-			"": i
-		}, "") : i;
-		throw new SyntaxError("JSON.parse");
-	})
-})()
+		calback(result.data);
+	});
+}
+
+;/*!app_core/js/zk_cache.js*/
+
+function ZKCache() {
+    var _self = this;
+    var cache = $G.Session();
+    var cacheData = cache.get("ZKCache");
+    if(!cacheData){
+        cacheData = {
+           nowReloadCount:0 
+        };
+        cache.set("ZKCache",cacheData);
+    }
+   /**
+    * 检测H5版本是否为最新若版本不是最新则尝试重载Html
+    * @param {String} h5Version H5版本号
+    */
+    _self.checkH5Version = function (h5Version) {
+        if(!$App.ProjectName||$Config.Env=="Dev")return false;
+        $App.getDictionary("XSF_Version_"+$App.ProjectName,"WebApp_Version",function(result){
+            if(!result)return false;
+            var nowVerNum = parseInt(h5Version);
+            var WebAppVersionNum = parseInt(result.value);
+            if(isNaN(WebAppVersionNum)) return false;
+            var session=$G.Session();
+            if(nowVerNum < WebAppVersionNum){
+                //单次最多尝试三次进行刷新
+                if (cacheData.nowReloadCount<3) {
+                    //强制刷新
+                    $App.go(0);
+                    cacheData.nowReloadCount++;
+                    cache.set("ZKCache",cacheData);
+                }
+            };
+        });
+    }
+}
 ;/*!app_core/index.js*/
 /**
  * 作者：PS    
@@ -12755,34 +13671,25 @@ JSON || (JSON = {}), (function() {
  *  本js为全局控制相关代码,若无必要,请不要改动或者新增该js中的内容
  * 
  * ================================
- * @require app_core/libs/layer_mobile/layer.css
- * @require app_core/libs/layer_mobile/layer.js
- * @require app_core/libs/mod/mod.js
- * @require app_core/libs/jquery/jquery.js
- * @require app_core/libs/vue/vue.js
- * @require app_core/js/general.js
  */
 /************************************************App主控制代码*********************************************/
-if(typeof $App == "undefined") {
+if (typeof $App == "undefined") {
 	window.$App = {
-		Info: {
-
-		}
+		Info: {}
 	}
 } else {
-	if(typeof $App.Info == "undefined") {
-		window.$App.Info = {
-		};
+	if (typeof $App.Info == "undefined") {
+		window.$App.Info = {};
 	}
 }
 
 /**
  * App单页路由对象(由VueRouter实现)
  */
-window.$App_SPA_Router={
-	currentRoute:{
-		params:{},
-		query:{}
+window.$App_SPA_Router = {
+	currentRoute: {
+		params: {},
+		query: {}
 	}
 };
 
@@ -12790,12 +13697,12 @@ window.$App_SPA_Router={
  * 数据中心
  */
 $App.dataCenter = {
-		/**
-		 * 字典
-		 */
-		Dictionary: {}
+	/**
+	 * 字典
+	 */
+	Dictionary: {}
 };
-	// 务必在加载 Vue 之后，立即同步设置以下内容
+// 务必在加载 Vue 之后，立即同步设置以下内容
 Vue.config.devtools = false;
 
 /**
@@ -12803,35 +13710,36 @@ Vue.config.devtools = false;
  * 作者：PS    
  * 日期：2016-12-15
  */
-$App.getUserToken=function(){
-	var token=$G.getUrlParam("__token");
+$App.getUserToken = function () {
+	var token = $G.getUrlParam("__token");
 	if (token) {
-		var doc=document.querySelector("meta[name='token']");
+		var doc = document.querySelector("meta[name='token']");
 		if (doc) {
-			token=doc.getAttribute("content");
+			token = doc.getAttribute("content");
 		}
 	}
 	if (!token) {
-		token="";
+		token = "";
 	}
 	return token;
 };
+
 
 /**
  * 获取用户UserId
  * 作者：PS    
  * 日期：2016-12-15
  */
-$App.getUserId=function(){
-	var val=$G.getUrlParam("__userid");
+$App.getUserId = function () {
+	var val = $G.getUrlParam("__userid");
 	if (val) {
-		var doc=document.querySelector("meta[name='userid']");
+		var doc = document.querySelector("meta[name='userid']");
 		if (doc) {
-			val=doc.getAttribute("content");
+			val = doc.getAttribute("content");
 		}
 	}
 	if (!val) {
-		val="-1";
+		val = "-1";
 	}
 	return val;
 };
@@ -12839,37 +13747,59 @@ $App.getUserId=function(){
 /**
  * app当前登陆的用户信息
  */
-$App._userInfo =(function(){
-	var token=$App.getUserToken();
-	var userId=$App.getUserId();
-	var isInWebView=token?true:false;
-	var session=$G.Session();
-	var info=session.get("XSF_UserInfo");
-	if(info){
-		if(token){
-			info.token=token;
+$App._userInfo = (function () {
+	var token = $App.getUserToken();
+	var userId = $App.getUserId();
+	//解密后的UserId(兼容经营管理有效 3.0.5) 后期去除
+	var deUserId = $G.getUrlParam("__deuserid");
+	var session = $G.Session();
+	var info = session.get("XSF_UserInfo");
+	if (info) {
+		if (token) {
+			info.token = token;
 		}
-		if(userId!="-1"){
-			info.userId=userId;
-		}		
-	}else{
-		info={
+		if (userId != "-1") {
+			info.userId = userId;
+		}
+		if (deUserId) {
+			info.deUserId = deUserId;
+		}
+	} else {
+		info = {
 			userName: null,
 			userAccount: null,
 			token: token,
-			userId:userId,
-			photo: null,
-			isInWebView:isInWebView
+			userId: userId,
+			userHeadUrl: null,
+			psId: null,
+			//店铺名称
+			psName: null,
+			psHeadUrl: null,
+			//			视频认证状态：0-未提交 1-审核中 2-成功 9-失败
+			videoStatus: null,
+			//			实名认证状态：1-未认证 2-成功 3-失败 4-认证中
+			realNameStatus: null,
+			//			实体店是否已认证：0-否 1-是
+			storeAuthStatus: null,
+			deUserId: deUserId,
+			isInWebView: token ? true : false
 		};
+
 		session.set("XSF_UserInfo", info);
 	}
+	//通过是否一开始就存在token 判断是否在私有App内嵌游览器中
+	$App.Info.isInWebView = info.isInWebView;
 	return info;
 })();
 
 /**
  * 用户信息对象
  */
-$App.UserInfo=function(){
+$App.UserInfo = function () {
+	$App._userInfo.update = function (info) {
+		$App._userInfo = $G.objSetDefaultVal(info, $App._userInfo);
+		$G.Session().set("XSF_UserInfo", $App._userInfo);
+	}
 	return $App._userInfo;
 }
 
@@ -12881,8 +13811,8 @@ $App.screen = {
 	 * 是否是大于等于手机屏幕
 	 * @param {Object} val 屏幕大小
 	 */
-	lessXS: function(val) {
-		if(val < 768) {
+	lessXS: function (val) {
+		if (val < 768) {
 			return true;
 		} else {
 			return false;
@@ -12892,8 +13822,8 @@ $App.screen = {
 	 * 是否是大于等于平板屏幕
 	 * @param {Object} val 屏幕大小
 	 */
-	greaterEqualSM: function(val) {
-		if(val >= 768) {
+	greaterEqualSM: function (val) {
+		if (val >= 768) {
 			return true;
 		} else {
 			return false;
@@ -12903,8 +13833,8 @@ $App.screen = {
 	 * 是否是大于等于桌面小屏幕
 	 * @param {Object} val 屏幕大小
 	 */
-	greaterEqualMD: function(val) {
-		if(val >= 992) {
+	greaterEqualMD: function (val) {
+		if (val >= 992) {
 			return true;
 		} else {
 			return false;
@@ -12914,8 +13844,8 @@ $App.screen = {
 	 * 是否是大于等于桌面正常屏幕
 	 * @param {Object} val 屏幕大小
 	 */
-	greaterEqualLG: function(val) {
-		if(val >= 1199) {
+	greaterEqualLG: function (val) {
+		if (val >= 1199) {
 			return true;
 		} else {
 			return false;
@@ -12924,20 +13854,8 @@ $App.screen = {
 	/**
 	 * 获取当前窗口宽度
 	 */
-	getNowDOMWidth: function() {
+	getNowDOMWidth: function () {
 		return $(document).width();
-	},
-	/**
-	 * 显示或隐藏侧边菜单
-	 */
-	clickNavLeftBtn: function() {
-		var $dom = $("#ik_aside_menue");
-		if($dom.hasClass("ik-aside-menue-show")) {
-			$dom.removeClass("ik-aside-menue-show");
-		} else {
-			$dom.addClass("ik-aside-menue-show");
-			$dom.css("height", "300px");
-		}
 	}
 };
 
@@ -12950,16 +13868,44 @@ $App.code = 1;
 /**
  * 获取新编号
  */
-$App.getCode = function() {
+$App.getCode = function () {
 	$App.code++;
 	return $App.code;
 };
 
 /**
- * 构造健在
+ * App准备完成状态
  */
-$App.ViewModel = function(vm) {
-	return new Vue(vm);
+$App.readyState = false;
+/**
+ * 2017-04-14 18:46:57 
+ * @author PS
+ * 
+ * app准备完成执行方法
+ */
+$App.ready = function (_func) {
+	if (document.all) {
+		window.attachEvent('onload', readyFunc);
+	} else {
+		window.addEventListener('load', readyFunc, false);
+	}
+	function readyFunc() {
+		//app已准备完成 直接执行
+		if ($App.readyState) {
+			_func();
+		} else {
+			//未准备完成添加到观察者列表中等待执行
+			$Observer.addObserver("app-ready", _func);
+		}
+	}
+};
+/**
+ * 构造实例
+ */
+$App.ViewModel = function (vm) {
+	$App.ready(function () {
+		new Vue(vm);
+	});
 };
 
 /**
@@ -12972,12 +13918,12 @@ $App.LayerStack = [];
  * 创建模态窗
  * @return {Object} component组件视图模型构造参数
  */
-$App.Modal = function(vmOptions) {
+$App.Modal = function (vmOptions) {
 
 	//	if (window.top!=window.self) {
 	//		return window.top.$App.Modal(vmOptions);
 	//	}
-	if(isEmpty(vmOptions.methods)) {
+	if (isEmpty(vmOptions.methods)) {
 		vmOptions.methods = {};
 	}
 
@@ -12990,15 +13936,15 @@ $App.Modal = function(vmOptions) {
 	 * show:"true 模态框初始化之后就立即显示出来。"
 	 * 
 	 */
-	vmOptions.methods.$_Show = function(options) {
-		if(!options) {
+	vmOptions.methods.$_Show = function (options) {
+		if (!options) {
 			options = {
 				backdrop: 'static'
 			};
 		}
 		options.show = true;
 		var modalView = this.$el.querySelector(".modal");
-		if(!modalView) {
+		if (!modalView) {
 			modalView = this.$el;
 		}
 		//		modalView.setAttribute("tabindex",)
@@ -13008,9 +13954,9 @@ $App.Modal = function(vmOptions) {
 	/**
 	 * 隐藏
 	 */
-	vmOptions.methods.$_Hide = function() {
+	vmOptions.methods.$_Hide = function () {
 		var modalView = this.$el.querySelector(".modal");
-		if(!modalView) {
+		if (!modalView) {
 			modalView = this.$el;
 		}
 		$(modalView).modal('hide');
@@ -13019,12 +13965,12 @@ $App.Modal = function(vmOptions) {
 	var component = Vue.extend(vmOptions);
 	var vm = new component().$mount();
 	//若页面没有模态弹出层容器则创建容器
-	if(docId('curLayer') == null) {
+	if (docId('curLayer') == null) {
 		$("body").append('<div id="curLayer" style="displa:none;"></div>');
 	}
 	docId("curLayer").appendChild(vm.$el);
 	$App.LayerStack.push(vm);
-	if($App.LayerStack.length > 5) {
+	if ($App.LayerStack.length > 5) {
 		//栈中最多缓存5个窗口
 		$App.LayerStack.splice(0, 1);
 	}
@@ -13039,11 +13985,27 @@ $App.Modal = function(vmOptions) {
  * 
  * option: icon:1[成功],2[错误],3[警告]
  */
-$App.alert = function(content, option, collback) {
+$App.alert = function (content, option, collback) {
+	//参数兼容
+	if (typeof option == "function") {
+		collback = option;
+		options = {};
+	}
+
+	var _collback = function (index) {
+		var result = true;
+		if (collback) {
+			result = collback(index);
+		}
+		if (result != false) {
+			$App.closeLayer(index);
+		}
+	}
 	var opt = {
 		content: content,
 		btn: '确定',
-		yes: collback
+		className: 'zk-layer',
+		yes: _collback
 	};
 	//给选项设置默认值
 	option = $G.objSetDefaultVal(option, opt);
@@ -13060,37 +14022,43 @@ $App.alert = function(content, option, collback) {
  * $App.confirm(content,yes,cancel)
  * $App.confirm(content,options,yes,cancel)
  */
-$App.confirm = function(content, options, yes, cancel) {
+$App.confirm = function (content, options, yes, cancel) {
 	//参数兼容
-	if(typeof options == "function") {
+	if (typeof options == "function") {
 		cancel = yes;
 		yes = options;
 		options = {};
 	}
-	var defOpt = {
-		content: content,
-		btn: ['确定', '取消'],
-		yes: yes,
-		no: cancel,
-		autoHide: false
-	}
-	options = $G.objSetDefaultVal(options, defOpt);
-	if(options.autoHide) {
-		var _yes = yes;
-		yes = function(index) {
-			if(_yes) {
-				_yes(index);
+
+
+	var _yes = yes;
+	yes = function (index) {
+		if (_yes) {
+			var result = _yes(index);
+			//返回结果不为false时自动关闭弹窗
+			if (result != false) {
+				$App.closeLayer(index);
 			}
+		} else {
 			$App.closeLayer(index);
 		}
 	}
+	var defOpt = {
+		content: content,
+		shadeClose: false,
+		className: 'zk-layer',
+		btn: ['确定', '取消'],
+		yes: yes,
+		no: cancel
+	}
+	options = $G.objSetDefaultVal(options, defOpt);
 	return layer.open(options);
 };
 
 /**
  * 自定义消息提示
  */
-$App.msg = function(content, option) {
+$App.msg = function (content, option) {
 	var opt = {
 		content: content,
 		skin: 'msg',
@@ -13107,11 +14075,11 @@ $App.msg = function(content, option) {
  * 显示时间,遮罩层透明度,点击遮罩层是否关闭
  * {time: 10秒,shade: 0.3,shadeClose: true}
  */
-$App.loading = function(content, option) {
+$App.loading = function (content, option) {
 	var opt = {
 		type: 2,
 		content: content,
-		shadeClose:false,
+		shadeClose: false,
 		time: 20, //2秒后自动关闭,
 	};
 	//给选项设置默认值
@@ -13129,23 +14097,20 @@ $App.loading = function(content, option) {
  */
 $App.closeLayer = layer.close;
 
-/**
- * 关闭弹出层【当前层】
- */
 $App.closeLoding = layer.close;
 
 /**
  * 时间or日期控件初始化
  * @param {Object} opt
  */
-$App.dateControlInit = function(opt) {
+$App.dateControlInit = function (opt) {
 	var defOpt = {
 		istime: true,
 		format: 'YYYY-MM-DD hh:mm:ss'
 	};
 
 	opt = $G.objSetDefaultVal(opt, defOpt);
-	if(typeof laydate == "undefined") {
+	if (typeof laydate == "undefined") {
 		throw "本方法依赖 /libs/layer/laydate/laydate.js 请在声明其依赖";
 	}
 	laydate(opt);
@@ -13153,11 +14118,42 @@ $App.dateControlInit = function(opt) {
 }
 
 /**
+ * 比对NativeApp版本 是否小于目标版本
+ * 2017-04-14 14:19:26 
+ * @author PS
+ * version: 版本号
+ */
+$App.lessAppVer = function (version) {
+	if (!version) {
+		$log("$App.lessAppVer:版本号不存在!");
+		return true;
+	}
+	var array = version.split(".");
+	for (var index = 0; index < array.length; index++) {
+		if (array[index].length < 2) {
+			array[index] = "0" + array[index];
+		}
+	}
+	version = array.join("");
+	version = parseInt(version);
+	//不存在版本号的版本
+	if (!$App.Info.appVersionNum) {
+		return true;
+	} else {
+		if (version > $App.Info.appVersionNum) {
+			return true;
+		} else {
+			return false;
+		}
+	}
+};
+
+/**
  * 图片查看器
  * @param {Object} id
  * @param {Object} opt
  */
-$App.ImgViewer = function(id, opt) {
+$App.ImgViewer = function (id, opt) {
 	var viewer = new Viewer(document.getElementById(id), opt);
 	//	return viewer;
 }
@@ -13171,82 +14167,91 @@ $App.ImgViewer = function(id, opt) {
  *	// params 和 query 可选
  *	params: { ... },非链接中的参数
  *	query: { ... }
+ * 	goBeforeCallback:function 跳转前回调
  *  isTopGo:bool 是否是最顶层跳转
  */
-$App.go = function(val) {
-	if(typeof val == 'string') {
+$App.go = function (val) {
+	var type = typeof val;
+	if (type == 'string'||type == 'number') {
 		val = {
-			path: val
+			path: val.toString()
 		};
 	}
-	var isSPA=false;
+
+	if (val.goBeforeCallback) {
+		val.goBeforeCallback();
+	}
+
+	//刷新当前页面
+	if (val.path == 0) {
+		window.location.href = window.location.href;
+		window.location.reload(true);
+		return true;
+	}
+
+
+	var isSPA = false;
 	//无.html结尾 为动态页面多半为单页
-	if (val.path.indexOf(".html")<0) {
-		isSPA=true;
+	if (val.path.indexOf(".html") < 0) {
+		isSPA = true;
 	}
 	//没有http or xsfapp前缀则确定为单页 否则为多页(项目中应不存在单页以外的动态页若存在也应使用绝对路径)
-	if (val.path.indexOf("://")>0) {
-		isSPA=false;
+	if (val.path.indexOf("://") > 0) {
+		isSPA = false;
 	}
 	//将将要跳转的地址压入栈中
-	var session=$G.Session();
-	var historyStack=session.get("zk_url_stack");
+	var session = $G.Session();
+	var historyStack = session.get("zk_url_stack");
 	if (!historyStack) {
-		historyStack=[];
+		historyStack = [];
 	}
 	//检测是否跳转到到栈中记录的历史地址
 	if (val.gotoHistory) {
-		var index=-1;
-		for (var i=0,len=historyStack.length;i<len;i++) {
-			if (item.path==val.path) {
-				index=i;
+		var index = -1;
+		for (var i = 0, len = historyStack.length; i < len; i++) {
+			if (item.path == val.path) {
+				index = i;
 				break;
 			}
 		}
-		if (index!=-1) {
+		if (index != -1) {
 			//删掉多余的url记录
 			historyStack.splice(index);
 		}
 	}
 	historyStack.push(val);
-	session.set("zk_url_stack",historyStack);
+	session.set("zk_url_stack", historyStack);
 	
-	//刷新当前页面
-	if (val.path==0) {
-		window.location.href=window.location.href;
-		window.location.reload();
-		return true;
-	}
 	//单页时处理
-	if (window.$App_SPA_Router&&isSPA) {
+	if (window.$App_SPA_Router && isSPA) {
 		//为负数时为 回退步数 或者前进步数
-		if (typeof val.path=='number') {
+		if (typeof val.path == 'number') {
 			$App_SPA_Router.go(val);
-		}else{
-			$App_SPA_Router.push(val);	
+		} else {
+			$App_SPA_Router.push(val);
 		}
 		return true;
 	}
-	
+
 	//多页路由跳转
 	//为相对路径时
-	if(val.path.indexOf('/') == 0) {
+	if (val.path.indexOf('/') == 0) {
 		//基于根目录的路径时 修正为绝对路径 兼容file://协议
 		val.path = $App.RootUrl + val.path;
 	}
 	//url链接携带参数
-	if(!isEmpty(val.query)) {
+	if (!isEmpty(val.query)) {
 		val.path = val.path + "?" + $G.toQueryString(val.query);
 	}
 	//非url连接携带参数
-	if(!isEmpty(val.params)) {
+	if (!isEmpty(val.params)) {
 		//参数存入session中
 		$G.Session().set("NowPageParams", val.params);
 	} else {
 		//去除session中参数 保持对应的session中参数和页面保持一致
 		$G.Session().remove("NowPageParams");
 	}
-	if(val.isTopGo) {
+	if (val.isTopGo) {
 		window.top.location.href = val.path;
 	} else {
 		window.location.href = val.path;
@@ -13257,12 +14262,19 @@ $App.go = function(val) {
  * 获取当前页面参数
  * @param {Object} key
  */
-$App.getPageParam=function(key){
+$App.getPageParam = function (key) {
 	//优先从Url中获取 不存在则尝试在单页路由中获取
 	var val = $G.getUrlParam(key);
+	//	从session中尝试获取参数
+	var nowPageParams = $G.Session().get("NowPageParams");
+	if (nowPageParams) {
+		if (nowPageParams[key]) {
+			val = nowPageParams[key];
+		}
+	}
 	if (!val) {
 		if ($App_SPA_Router) {
-			var nowPageRoute=$App_SPA_Router.currentRoute;
+			var nowPageRoute = $App_SPA_Router.currentRoute;
 			val = nowPageRoute.params[key];
 			if (!val) {
 				val = nowPageRoute.query[key];
@@ -13270,207 +14282,14 @@ $App.getPageParam=function(key){
 					return null;
 				}
 			}
+		} else {
+
 		}
 	}
 	return val;
 };
 
-(function() {
-	var token=$App._userInfo.token;
-	var userId=$App._userInfo.userId;
-	var mct=9;
-	if ($App._userInfo.isInWebView) {
-		if ($G.deviceInfo.isSystem.ios) {
-			mct=2;
-		}else if($G.deviceInfo.isSystem.android){
-			mct=1;
-		}
-	}
-
-	var mst=mct*10+2;
-	$.ajaxSetup({
-		contentType: "application/json;charset=utf-8",
-		processData: false,
-		headers: {
-			"token": token,
-			"m-nw":"",
-			"m-iv":"3.0.0",
-			"m-cv":"3.0.0",
-			"m-ct":mct,
-			"m-st": mst,
-			"m-ui": userId,
-			"m-cw":"",
-			"m-ch":"",
-			"m-ii":"",
-			"m-ci":"",
-			"m-lng":"108.2032",
-			"m-lat":"31.1234",
-			"m-up":"",
-			"m-uc":"",
-			"m-ud":"",
-			"appVersion":"300"
-		},
-		dataType:"json"
-	});
-
-	window.$App_httpStack={};
-	/**
-	 * ajax参数设置默认值
-	 */
-	$.ajaxPrefilter(function(options, originalOptions, jqXHR) {
-		if(options.commonDel == false) { //是否设置禁用公共 处理
-			return false;
-		}
-		//若已存在相同域名请求则放弃已发起请求
-		if($App_httpStack[options.url]){
-			//放弃之前请求
-			$App_httpStack[options.url].abort();
-		}
-		//记录当前请求对象
-		$App_httpStack[options.url]=jqXHR;
-		
-		//发起请求时显示加载界面
-		var loading = null;
-		var timeIndex;
-		if(options.loading != false) {
-			timeIndex=setTimeout(function(){
-				loading = $App.loading("加载中...");
-			},500);
-		}
-
-		//自定义传输数据的格式
-		if(typeof options.data == "object" && options.processData == false) {
-			if(options.type == "get") {
-				options.data = $G.toQueryString(options.data);
-			} else {
-				if(options.convertNull===false){
-					options.data = JSON.stringify(options.data);
-				}else{
-					options.data = JSON.stringify(options.data, handlePostSwitchData);	
-				}
-			}
-		}
-
-		var complete = options.complete;
-		options.complete = function(xhr, status) {
-			delete $App_httpStack[options.url];
-			//清除计时器
-			clearTimeout(timeIndex);
-			if(loading != null) {
-				$App.closeLoding(loading);
-			}
-			if(!isEmpty(complete)) {
-				complete(xhr, status);
-			}
-		}
-		if(options.useSuccessDel != false) {
-			var success = options.success;
-			options.success = function(result, status, xhr) {
-				if(result.status != undefined) {
-					if(result.status == 1) {
-						$App.msg(result.msg);
-						return false;
-					} else if( result.status == -1||result.status == "-1") {
-						$App.msg("服务器异常,请联系管理员！");
-						return false;
-					}else if( result.status == 2||result.status == "2") {
-						$App.msg(result.msg);
-						return false;
-					}else if(result.status == 3) {
-						$App.msg("无权限或者未登录！请重新登陆");
-						setTimeout(function() {
-							$App.go({
-								path: $App.RootUrl.replace("/statics", ""),
-								isTopGo: true
-							});
-						}, 1000);
-						return false;
-					}
-				} else {
-					if(result.indexOf("请登录") >= 0) {
-						$App.msg("无权限或者未登录！请重新登陆");
-						setTimeout(function() {
-							$App.go({
-								path: $App.RootUrl.replace("/statics", ""),
-								isTopGo: true
-							});
-						}, 1000);
-						return false;
-					}
-				}
-				//			if (result.status!=undefined&&result.status==1) {
-				//				$App.msg(result.Desc);
-				//				return false;
-				//			}
-
-				if(success != undefined) {
-					//执行自定义样式
-					success(result, status, xhr);
-				}
-			};
-		}
-
-		var error = options.error;
-		options.error = function(XMLHttpRequest, textStatus, errorThrown) {
-			httpErrorCommonDel(XMLHttpRequest, textStatus, errorThrown);
-			if(error != undefined) {
-				//执行自定义样式
-				error(XMLHttpRequest, textStatus, errorThrown);
-			}
-		};
-	});
-
-	function httpErrorCommonDel(XMLHttpRequest, textStatus, errorThrown) {
-		var status = XMLHttpRequest.status;
-		if(status >= 401 && status < 404) {
-			$App.msg("未登录！请重新登陆");
-
-			setTimeout(function() {
-				$App.go({
-					path: $App.RootUrl.replace("/statics", "") + '/login.html',
-					isTopGo: true
-				});
-			}, 1000);
-		} else if(status == 500) {
-			$App.msg("服务器异常,请联系管理员!");
-		} else if(status == 404) {
-			$App.msg("服务器异常,请联系管理员!");
-		} else if(status == 200) {
-			if(XMLHttpRequest.responseURL != "") {
-				window.top.location.href = XMLHttpRequest.responseURL
-			} else {
-				$App.msg("解析数据失败!");
-			}
-		} else {
-			if(textStatus == "timeout") {
-				$App.msg("网络超时！请稍后再试");
-				return;
-			}
-			if(textStatus == "parsererror") {
-				//错误或者解析异常
-				$App.msg("网络或服务器异常,请稍候再试!");
-				return;
-			}
-			
-			if(textStatus=="abort"){
-	    		//强行终止
-		    }else{
-		    	$App.msg("错误请求");
-		    }
-		}
-	}
-
-	/**
-	 * 处理每一项提交的数据的
-	 * @param {Object} key
-	 * @param {Object} value
-	 */
-	function handlePostSwitchData(key, value) {
-		if(value === "") {
-			value = null;
-		}
-		return value;
-	}
+(function () {
 
 	/**
 	 * 字数限制 指令
@@ -13480,11 +14299,11 @@ $App.getPageParam=function(key){
 		inserted: zkLimit,
 		// 当绑定元素插入到 DOM 中。
 		update: zkLimit
-	})
+	});
 
 	function zkLimit(el, binding, vnode, oldVnode) {
-		if(typeof binding.value == "number") {
-			if(el.innerHTML.length > binding.value) {
+		if (typeof binding.value == "number") {
+			if (el.innerHTML.length > binding.value) {
 				el.innerHTML = el.innerHTML.substr(0, binding.value) + "...";
 			}
 		}
@@ -13496,13 +14315,13 @@ $App.getPageParam=function(key){
 	 * View初始化
 	 */
 	function pageInit() {
-	
+
 	}
 
 	/**
 	 * Dom渲染完毕后执行
 	 */
-	$document.ready(function() {
+	$document.ready(function () {
 		pageInit();
 	});
 
@@ -13512,91 +14331,39 @@ $App.getPageParam=function(key){
 	/**
 	 * 初始化设置app资源根路径
 	 */
-	if($App.ProjectName != undefined && $App.ProjectName != null && $App.ProjectName != ""&&$App.EnableMock==false) {
+	if ($App.ProjectName != undefined && $App.ProjectName != null && $App.ProjectName != "" && $App.EnableMock == false) {
 		rootUrl = rootUrl + "/" + $App.ProjectName;
 	}
 	/**
 	 * 调试启用框架自带数据模拟模式
 	 */
-	if($App.EnableMock) {
+	if ($App.EnableMock) {
 		$App.ApiRoot = rootUrl + "/api";
 	}
-	$App.RootUrl = rootUrl;
+	//主动设置后优先用设置的
+	if (!$App.RootUrl) {
+		$App.RootUrl = rootUrl;
+	}
+
+	// 通知中心实例化
+	window.$Observer = new ZKObserver();
+	// HyApp实例化
+	window.$HyApp = new HyApp();
+	window.$ZKCache = new ZKCache();
+	//App信息初始化
+	ZKAppInfo(function (info) {
+		$App.Info = info;
+		// 网路请求插件实例化
+		new ZKHttp($App.UserInfo(), info);
+		$App.readyState = true;
+		// 发布已App已准备完成
+		$Observer.publish("app-ready");
+		//存在H5版本号标志则进行检测
+		if($App.Info&&$App.Info.h5Version){
+			$ZKCache.checkH5Version($App.Info.h5Version);
+		};
+	});
 
 	//3.0前端项目未独立部署时使用 独立部署时去除
-//	$App.RootUrl = $App.RootUrl + "/statics";
+	//	$App.RootUrl = $App.RootUrl + "/statics";
 })();
-;/*!app_core/js/bss_common.js*/
-/**
- * 业务公共类
- * 作者：PS    
- * 日期：2016-12-02
- * @require app_core/index.js
- */
-/**
- * 获取通用字典
- * @param {String} key
- * @param {String} phraseKey
- * @param {Function} calback(val)
- * @param {Boolean} needConstantly 是否需要实时数据
- */
-$App.getDictionary=function(dictKey,phraseKey,calback,needConstantly){
-	if (typeof phraseKey=="function") {
-		calback=phraseKey;
-		phraseKey=null;
-	}
-	var local=$App.dataCenter.Dictionary;
-	if (local[dictKey]&&!needConstantly) {
-		if (phraseKey) {
-			calback(local[dictKey][phraseKey]);
-		}else{
-			calback(local[dictKey]);
-		}
-	}else{
-		$.post($App.ApiRoot + "/Common/getDictionarysByKey", {
-			dictionaryKey: dictKey
-		}, function(result, status, xhr) {
-			if(result.status != 0) {
-				return false;
-			}
-			local[dictKey]=result.data;
-			if (phraseKey) {
-				calback(local[dictKey][phraseKey]);
-			}else{
-				calback(local[dictKey]);
-			}
-		});
-	}
-}
-
-/**
- * 获取内容配置By分类Code
- * @param {String} code
- * @param {Function} calback(val)
- */
-$App.getContentByCategoryCode=function(code,calback){
-	$.post($App.ApiRoot + "/operator/getContentListByCategoryCode", {
-		categoryCode: code
-	}, function(result, status, xhr) {
-		if(result.status != 0) {
-			return false;
-		}
-		calback(result.data);
-	});
-}
-
-/**
- * 获取内容配置
- * @param {String} code
- * @param {Function} calback(val)
- */
-$App.getContent=function(code,calback){
-	$.post($App.ApiRoot + "/operator/getContentByContentCode", {
-		contentCode: code
-	}, function(result, status, xhr) {
-		if(result.status != 0) {
-			return false;
-		}
-		calback(result.data);
-	});
-}
