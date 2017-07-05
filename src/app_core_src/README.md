@@ -20,20 +20,13 @@ LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 THE SOFTWARE.
 
-### pc_no_ui
-
-- jquery.min.js
-- layer.min.js
-- mod.js
-- vue.js 2.0
-
-npm install -g fis3-postpackager-loader
-npm install -g fis-postprocessor-px2rem
-npm install -g fis3-deploy-replace
-npm install -g fis3-deploy-skip-packed
-npm install -g fis3-deploy-zip
-npm install -g fis3-hook-commonjs
-npm install -g fis3-hook-relative
-npm install -g fis3-parser-vue-component
-npm install -g fis3-postpackager-loadrequires
-npm install -g fis3-deploy-tar
+- npm install -g fis3-postpackager-loader
+- npm install -g fis-postprocessor-px2rem
+- npm install -g fis3-deploy-replace
+- npm install -g fis3-deploy-skip-packed
+- npm install -g fis3-deploy-zip
+- npm install -g fis3-hook-commonjs
+- npm install -g fis3-hook-relative
+- npm install -g fis3-parser-vue-component
+- npm install -g fis3-postpackager-loadrequires
+- npm install -g fis3-deploy-tar
