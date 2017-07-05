@@ -26,77 +26,77 @@
 格式一：无返回值
 
 ```json
-{"status":0, "msg":"操作成功", "data":null}
+    {"status":0, "msg":"操作成功", "data":null}
 ```
 
 格式二：返回对象
 
 ```json
-{"status":0, "msg":"成功", "data":{"orderNo":"HZ16110102111166", "totalAmount":100.00}}
+    {"status":0, "msg":"成功", "data":{"orderNo":"HZ16110102111166", "totalAmount":100.00}}
 ```
 
 格式三：返回列表
 
 ```json
-{"status":0, "msg":"成功", "data":[
+    {"status":0, "msg":"成功", "data":[
 
-    {"id":1, "name":"商品1", "desc":"商品描述1"},
+        {"id":1, "name":"商品1", "desc":"商品描述1"},
 
-    {"id":2, "name":"商品2", "desc":"商品描述2"}
+        {"id":2, "name":"商品2", "desc":"商品描述2"}
 
-]}
+    ]}
 ```
 
 格式四：返回分页列表
 
 ```json
-{"status":0, "msg":"成功","data":{
+    {"status":0, "msg":"成功","data":{
 
-   	"pageNo":1,
+       	"pageNo":1,
 
-    "pageSize":20,
+        "pageSize":20,
 
-    "totalCount":0,
+        "totalCount":0,
 
-    "totalPage":0,
+        "totalPage":0,
 
-    "extraData":null,
+        "extraData":null,
 
-    "data":[{
+        "data":[{
 
-        "id":379681,
+            "id":379681,
 
-        "productId":8801,
+            "productId":8801,
 
-        "name":"沣瑞祥翡翠",
+            "name":"沣瑞祥翡翠",
 
-        "pictures":[
+            "pictures":[
 
-            {"pictureId":154223,"pictureUrl":"GetPicture?PictureId=154223"},
+                {"pictureId":154223,"pictureUrl":"GetPicture?PictureId=154223"},
 
-            {"pictureId":154223,"pictureUrl":"GetPicture?PictureId=154223"}
+                {"pictureId":154223,"pictureUrl":"GetPicture?PictureId=154223"}
 
-        ]
+            ]
 
-    },{
+        },{
 
-        "id":379682,
+            "id":379682,
 
-        "productId":8802,
+            "productId":8802,
 
-        "name":"沣瑞祥翡翠",
+            "name":"沣瑞祥翡翠",
 
-        "pictures":[
+            "pictures":[
 
-            {"PictureId":154223,"pictureUrl":"GetPicture?PictureId=154223"},
+                {"PictureId":154223,"pictureUrl":"GetPicture?PictureId=154223"},
 
-            {"PictureId":154223,"pictureUrl":"GetPicture?PictureId=154223"}
+                {"PictureId":154223,"pictureUrl":"GetPicture?PictureId=154223"}
 
-        ]
+            ]
 
-    }]
+        }]
 
-}}
+    }}
 ```
 
 ### 其它约定
