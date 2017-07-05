@@ -1,0 +1,77 @@
+img {
+	width: 100%;
+}
+
+/**
+ * 遮罩层
+ */
+.zk-shade-base{
+	height: 100%;
+	width: 100%;
+	position: fixed;
+	display:block;
+	top: 0px;
+	left: 0;
+    z-index: 900;
+	background-color: black;
+	filter:alpha(opacity=70); /*IE滤镜，透明度50%*/
+	-moz-opacity:0.7; /*Firefox私有，透明度50%*/
+	opacity:0.7;/*其他，透明度50%*/
+	overflow: hidden;
+}
+
+/**
+ *	清除浮动 
+ */
+.zk-clearfix:after {
+	content: "\20";
+	display: block;
+	height: 0;
+	clear: both;
+}
+
+.zk-clearfix {
+	*zoom: 1;
+	_zoom: 1
+}
+
+.zk-border-t {
+	border-top: 1px solid #E0E0E0;
+	/*px*/
+}
+
+.zk-border-b {
+	border-bottom: 1px solid #E0E0E0;
+	/*px*/
+}
+
+.zk-border-tb {
+	border-top:  1px solid #E0E0E0;
+	/*px*/
+	border-bottom:  1px solid #E0E0E0;
+	/*px*/
+	background-image: none
+}
+
+.zk-border-l {
+	border-left: 1px solid #E0E0E0;
+	/*px*/
+}
+
+.zk-border-r {
+	border-right: 1px solid #E0E0E0;
+	/*px*/
+}
+
+.zk-border {
+	border: 1px solid #E0E0E0;
+	/*px*/
+}
+
+[v-cloak] {
+  display: none;
+}
+
+
+
+
