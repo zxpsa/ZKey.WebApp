@@ -14,7 +14,7 @@ var $App={};
 var	$Config={
 	// 默认环境 
 	// 服务器模式自动识别,HyApp模式需要手动配置
-	Env:"Formal"
+	Env:"Dev"
 };
 
 /**

@@ -1,1 +1,0 @@
-fis3 release debug -wLc

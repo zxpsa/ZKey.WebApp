@@ -13643,22 +13643,27 @@ function ZKCache() {
     * @param {String} h5Version H5版本号
     */
     _self.checkH5Version = function (h5Version) {
-        if(!$App.ProjectName||$Config.Env=="Dev")return false;
-        $App.getDictionary("XSF_Version_"+$App.ProjectName,"WebApp_Version",function(result){
-            if(!result)return false;
-            var nowVerNum = parseInt(h5Version);
-            var WebAppVersionNum = parseInt(result.value);
-            if(isNaN(WebAppVersionNum)) return false;
-            var session=$G.Session();
-            if(nowVerNum < WebAppVersionNum){
-                //单次最多尝试三次进行刷新
-                if (cacheData.nowReloadCount<3) {
-                    //强制刷新
-                    $App.go(0);
-                    cacheData.nowReloadCount++;
-                    cache.set("ZKCache",cacheData);
-                }
-            };
+        if($Config.Env=="Dev")return false;
+        $.ajax({
+            type: 'GET',
+            url:$App.RootUrl+"/app_common/app_info.html",
+            commonDel:false,
+            success:function (result, status, xhr) {
+                if(!result)return false;
+                var nowVerNum = parseInt(h5Version);
+                var WebAppVersionNum = parseInt(result.newVersion);
+                if(isNaN(WebAppVersionNum)) return false;
+                var session = $G.Session();
+                if(nowVerNum < WebAppVersionNum){
+                    //单次最多尝试三次进行刷新
+                    if (cacheData.nowReloadCount<3) {
+                        //强制刷新
+                        $App.go(0);
+                        cacheData.nowReloadCount++;
+                        cache.set("ZKCache",cacheData);
+                    }
+                };
+            }
         });
     }
 }
@@ -14363,7 +14368,4 @@ $App.getPageParam = function (key) {
 			$ZKCache.checkH5Version($App.Info.h5Version);
 		};
 	});
-
-	//3.0前端项目未独立部署时使用 独立部署时去除
-	//	$App.RootUrl = $App.RootUrl + "/statics";
 })();

@@ -4,6 +4,6 @@
 module.exports = [{
 	path: '/test', //页面
 	component: function(resolve) {
-		require.async('modules/test/index.vue', resolve);
+		require.async('modules/test/page/index.vue', resolve);
 	}
 }];
