@@ -11,4 +11,10 @@ module.exports = [{
 	component: function (resolve) {
 		require.async('modules/test/page/b.vue', resolve);
 	}
+},
+{
+	path: '/test', //页面
+	component: function (resolve) {
+		require.async('modules/test/page/index.vue', resolve);
+	}
 }];

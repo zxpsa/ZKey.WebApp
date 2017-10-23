@@ -30,13 +30,17 @@
 </template>
 <script lang="es">
     const methods = { testClick, toBPage,testQR1,testQR2,testQR3, testQR9 };
-    export default { name:'aaa',data, mounted, methods, beforeRouteEnter,beforeRouteLeave, deactivated}
+    export default { data,created ,mounted, methods, beforeRouteEnter,beforeRouteLeave}
     
     function data() {
         return {
             msg: null,
             count:1
         };
+    }
+    // 页面初始化
+    function created() {
+        
     }
     
     function beforeRouteEnter(to, from, next) {
@@ -68,10 +72,6 @@
             });
         }
         changeVal();
-    }
-
-    function deactivated() {
-        console.log('deactivated');
     }
 
     function testClick(aa) {
