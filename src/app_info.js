@@ -13,6 +13,13 @@ $App.Info = {
     isInWebView:false
 };
 
+$App.Page={
+    // webapp首页地址
+    HomeIndex:null,
+    // 订单列表地址
+    OrderListUrl:'/order/order_list'
+}
+
 /**
  * 左侧菜单配置
  */

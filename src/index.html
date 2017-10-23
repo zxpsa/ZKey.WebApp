@@ -15,14 +15,15 @@
 		<!--[if lt IE 9]>
     		<meta http-equiv="refresh" content="0;url='/app/html/ie.html'" />
     	<![endif]-->
-		<link rel="shortcut icon" href="favicon.ico">
 	</head>
 	<body>
 		<div id="app">
+				<keep-alive>
 			<router-view></router-view>
+		</keep-alive>
 		</div>		
 		<script type="text/javascript">
-			$App.ViewModel(require('app_common/app'));
+			$App.ViewModel(require('./index.es.js'));
 		</script>
 	</body>
 

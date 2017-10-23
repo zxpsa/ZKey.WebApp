@@ -29,7 +29,7 @@
 	}
 	
 	._vuec .arrow-right> i {
-		background-image: url('/app_common/img/icon/left_arrow.png');
+		background-image: url('../img/icon/left_arrow.png');
 		background-repeat: no-repeat;
 		background-size: contain;
 		position: absolute;
@@ -94,7 +94,6 @@
 			</div>
 		</div>
 	</div>
-	
 </template>
 <script lang="js">
 	'use strict';
@@ -109,7 +108,7 @@
 			title:{
 				type:String,
 				default:function(){
-					return "臻臻";
+					return "兴手付";
 				}
 			},
 			backBtn:{
@@ -157,10 +156,11 @@
 					window.close();
 				}
 				this.$emit("btn-click",btn);
+			},
+			registerGuideClosed:function(){
+				this.$emit("register-guide-closed");
 			}
 		},
-		components: {
-
-		}
+		components: {}
 	}
 </script>

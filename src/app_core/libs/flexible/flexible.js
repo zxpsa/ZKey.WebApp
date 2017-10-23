@@ -30,7 +30,7 @@
             }
         }
     }
-
+    var sys="other";
     if (!dpr && !scale) {
         var isAndroid = win.navigator.appVersion.match(/android/gi);
         var isIPhone = win.navigator.appVersion.match(/iphone/gi);
@@ -44,13 +44,17 @@
             } else {
                 dpr = 1;
             }
+            sys='ios';
         } else {
             // 其他设备下，仍旧使用1倍的方案
             dpr = 1;
+            if (isAndroid) {
+                sys='android';
+            }
         }
         scale = 1 / dpr;
     }
-
+    docEl.setAttribute('data-sys', sys);
     docEl.setAttribute('data-dpr', dpr);
     if (!metaEl) {
         metaEl = doc.createElement('meta');
@@ -72,6 +76,13 @@
         }
         var rem = width / 10;
         docEl.style.fontSize = rem + 'px';
+        // fix android webview 里 html font-size 因设置系统字体大小受到影响
+        var realitySize = parseInt(window.getComputedStyle(document.documentElement).fontSize);
+        if (rem !== realitySize) {
+            rem = rem * rem / realitySize;
+            docEl.style.fontSize = rem + 'px';
+        }
+
         flexible.rem = win.rem = rem;
     }
 

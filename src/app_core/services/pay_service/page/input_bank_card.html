@@ -1,0 +1,75 @@
+<!DOCTYPE html>
+<html>
+
+	<head>
+		<meta charset="UTF-8">
+		<title>兴手付</title>
+		<link rel="import" href="/app_common/head.html?__inline">
+	</head>
+	<body>
+		<div id="page">
+			<pay-nav v-show="hasNav" :title="pageTitle" :right-btns="null"></pay-nav>
+			<!--选择银行卡-->
+			<div class="bank-card" v-show="type==0" v-cloak>
+				<div class="row zk-border-b row-btn" @click="goCreditCardPage">
+					<label>信用卡</label><span></span>
+				</div>
+				<div class="row zk-border-b row-btn" @click="goBankCardPage">
+					<label>储蓄卡</label><span></span>
+				</div>
+			</div>
+			<!--银行卡信息输入-->
+			<div class="bank-card" v-show="type==1" v-cloak>
+				<div class="row zk-border-b">
+					<label>持卡人</label><input type="text" placeholder="持卡人姓名" v-model="userName"/>
+				</div>
+				<div class="row zk-border-b">
+					<label>身份证</label><input type="text" placeholder="持卡人身份证号码" v-model="idCardNo"/>
+				</div>
+				<div class="row zk-border-b">
+					<label>卡号</label><input type="text" placeholder="卡号" v-model="bankCardNo"/>
+				</div>
+				<div class="row zk-border-b">
+					<label>预留手机号</label><input type="text" placeholder="开卡银行预留手机号" v-model="bankPhoneNo"/>
+				</div>
+				<div class="row zk-border-b">
+					<label>短信验证码</label>
+					<a href="javascript:;" class="send-btn" @click="sendSMS" v-text="sendSMSTimeStr"></a>
+					<input class="verify-code" type="text" placeholder="短信验证码" v-model="smsCode"/>
+				</div>
+				<div class="confirm-btn" @click="sure">确定</div>
+			</div>
+			<!--信用卡信息输入-->
+			<div class="bank-card" v-show="type==2" v-cloak>
+				<div class="row zk-border-b">
+					<label>持卡人</label><input type="text" placeholder="持卡人姓名" v-model="userName"/>
+				</div>
+				<div class="row zk-border-b">
+					<label>身份证</label><input type="text" placeholder="持卡人身份证号码" v-model="idCardNo"/>
+				</div>
+				<div class="row zk-border-b">
+					<label>卡号</label><input type="text" placeholder="卡号" v-model="bankCardNo"/>
+				</div>
+				<div class="row zk-border-b">
+					<label>有效期</label><input type="text" placeholder="例如：09、15，输入0915" v-model="validthru"/>
+				</div>
+				<div class="row zk-border-b">
+					<label>安全码</label><input type="text" placeholder="信用卡背面三位数" v-model="cvv2"/>
+				</div>
+				<div class="row zk-border-b">
+					<label>预留手机号</label><input type="text" placeholder="开卡银行预留手机号" v-model="bankPhoneNo"/>
+				</div>
+				<div class="row zk-border-b">
+					<label>短信验证码</label>
+					<a href="javascript:;" class="send-btn" @click="sendSMS" v-text="sendSMSTimeStr"></a>
+					<input class="verify-code" type="text" placeholder="短信验证码" v-model="smsCode"/>
+				</div>
+				<div class="confirm-btn" @click="sure">确定</div>
+			</div>
+		</div>
+		<script type="text/javascript">
+			new Vue(require("app_core/services/pay_service/page/input_bank_card"));
+		</script>
+	</body>
+
+</html>

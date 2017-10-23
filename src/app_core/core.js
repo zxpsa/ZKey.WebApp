@@ -1,3 +1,85 @@
+;/*!app_core/js/zk_log.js*/
+/**
+ * 日志对象
+ * 2017-07-22 12:16:14 @author PS
+ */
+function ZKLog() {
+    window.$log={
+        info:outInfo,
+        error:outError,
+        frame:outFrame
+    };
+    var errorFunc;
+    if (window.onerror) {
+        errorFunc = window.onerror;
+    }
+    // $App.Debug 0.关闭 1.错误级别 2.业务详细日志 3.框架详细日志
+    window.onerror = function (errorMessage, scriptURI, lineNumber) {
+        //先执行已注册错误处理方法
+       if(errorFunc)errorFunc(arguments);
+        if($App.Debug){
+            $log.error(arguments);
+        }
+    }
+
+    /**
+     * 输出详细业务日志
+     * @param {String} content 
+     * @param {Object} data 
+     */
+    function outInfo(content, data) {
+        if ($App.Debug==2) {
+            outLog(content,data);
+        }
+    }
+
+    /**
+     * 输出业务错误日志
+     * @param {String} content 
+     * @param {Object} data 
+     */
+    function outError(content, data) {
+        if ($App.Debug) {
+            outLog(content,data);
+        }
+    }
+
+    /**
+     * 输出框架详细日志
+     * @param {String} content 
+     * @param {Object} data 
+     */
+    function outFrame(content, data) {
+        if ($App.Debug==3) {
+            outLog(content,data);
+        }
+    }
+
+
+    /**
+     * 输出日志
+     * @param {String} content 信息
+     * @param {Object} data 错误对象,或数据对象
+     */
+    function outLog(content,data){
+         // 移动端使用弹窗方式输出
+        if ($G.deviceInfo.isBrowser.mobile) {
+            if (typeof data == "object")data = JSON.stringify(data);
+            if (typeof content != "object"){
+                if (!data)data="";
+                content += data;
+            }else{
+                content = JSON.stringify(content);
+            }
+            alert(content);
+        } else {
+            console.log(content);
+            if(data)console.log(data);
+        }
+    }
+}
+// 加载即初始化 最高优先级
+new ZKLog();
 ;/*!app_core/libs/es6-promise/promise.js*/
 (function(global){
 
@@ -12214,84 +12296,9 @@ var docId = function(id) {
 };
 
 /**
- * 日志记录
- * @param {*} content
- */
-window.$log=function(content,data){
-	if($App.Debug){
-		if(typeof data=="object"){
-			try {
-				//对data进行尝试序列化
-				data=JSON.stringify(data);
-			} catch (error) {
-				// 序列化失败则直接报出data
-				alert(data);
-				return;
-			}
-		}
-		if (!data) {
-			data="";
-		}
-		if (typeof content!="object") {
-			content+=data;	
-		}
-		if($App.Debug==2){
-			alert(content);
-		}else{
-			console.log(content);
-		}
-	}
-};
-
-/**
  * 通用工具类
  */
 var General = {
-		/**
-		 * General数据存储中心
-		 */
-		dataCenter: {
-			basePath: null,
-			jsList: [],
-			cssList: [],
-			HeadTag: null
-		},
-		/**
-		 * dom选择器
-		 * @param {String} selector 选择表达式
-		 * @param {Object} win window 对象
-		 * @param {Boolean} UseJquery 强制使用Jquery
-		 *
-		 */
-		queryDom: function(selector, win, UseJquery) {
-			// IE6 7 8使用jquery选择器做兼容
-			if(!document.querySelectorAll || UseJquery) {
-				return $(selector);
-			}
-			//选择使用的Window
-			if(!win) {
-				win = window;
-			}
-			return win.document.querySelector(selector);
-		},
-		/**
-		 * doms选择器
-		 * @param {String} selector 选择表达式
-		 * @param {Object} win window 对象
-		 * @param {Boolean} UseJquery 强制使用Jquery
-		 *
-		 */
-		queryDoms: function(selector, win, UseJquery) {
-			// IE6 7 8使用jquery选择器做兼容
-			if(!document.querySelectorAll || UseJquery) {
-				return $(selector);
-			}
-			//选择使用的Window
-			if(!win) {
-				win = window;
-			}
-			return win.document.querySelectorAll(selector);
-		},
 		/**
 		 * 默认进行初始化
 		 */
@@ -12381,50 +12388,6 @@ var General = {
 			return date;
 		},
 		/**
-		 * 时间字符串转换为展示字符串(精确到秒)
-		 * 注:低于微秒级以下精确时间不可用此方法
-		 * @return DateStr
-		 */
-		toShowTimeStr: function(str) {
-			var rege = new RegExp("T|(\\..*$)", "g");
-			str = str.replace(rege, " ");
-			return str;
-		},
-		/**
-		 * 注入页面数据
-		 * 根据json数据按key为domId寻找对应dom赋值
-		 * @param {Object} json 数据
-		 */
-		setViewData: function(json) {
-			for(var key in json) {
-				var docItem = docId(key);
-				if(json[key] == null) {
-					json[key] = "";
-				}
-				if(docItem != undefined && docItem != null) {
-					if(docItem.tagName == "INPUT") {
-						if(docItem.type == "text" || docItem.type == "hidden") {
-							docItem.value = json[key];
-							continue;
-						}
-						if(docItem.type == "checkbox" && docItem.value == json[key]) {
-							docItem.checked = "checked";
-						} else {
-							docItem.checked = "";
-						}
-					}
-					if(docItem.tagName == "SELECT") {
-						docItem.value = json[key];
-						continue;
-					}
-					if(docItem.tagName == "TD") {
-						docItem.innerHTML = json[key];
-						continue;
-					}
-				}
-			}
-		},
-		/**
 		 * 界面加载完毕后执行方法
 		 * @param {Object} func 被执行的方法
 		 */
@@ -12454,30 +12417,9 @@ var General = {
 			}
 		},
 		/**
-		 * 转换为html页面中属性值字符串
-		 * @param {Object} obj
-		 */
-		objToHtmlAttrStr: function(obj) {
-			var str = JSON.stringify(obj);
-			str = str.replace(/"/g, "'");
-			return str;
-		},
-		/**
-		 * html页面中属性值字符串转换为js对象
-		 * @param {String} str
-		 */
-		htmlAttrStrToObj: function(str) {
-			str = str.replace(/'/g, "\"");
-			var obj = JSON.parse(str);
-			return obj;
-		},
-		/**
 		 *  克隆对象
 		 */
 		cloneObj: function(obj) {
-			//			var objStr=JSON.stringify(obj);
-			//			return JSON.parse(objStr);
-
 			return cloneItem(obj);
 			//克隆节点
 			function cloneItem(node) {
@@ -12520,8 +12462,7 @@ var General = {
 		}
 	}
 	//初始化执行
-General.windowReady(function() {
-		//loadAllJS(General.dataCenter.jsList);
+	General.windowReady(function() {
 		General.init();
 	})
 	/**
@@ -12615,22 +12556,6 @@ General.getUrlParam = function(name) {
 	return null;
 }
 
-/**
- * Json数据组装成的URL
- * @return JSON
- * 待删除
- */
-General.dataToUrl = function(data) {
-	var urlDataArray = [];
-	for(var item in data) {
-		if(item != "" || item != "count") {
-			urlDataArray.push(item + "=" + data[item]);
-		}
-	}
-	urlDataArray = urlDataArray.join("&");
-	return urlDataArray;
-}
-
 General.toQueryString = function(obj, url) {
 	var paramStr = [];
 	for(var item in obj) {
@@ -12643,7 +12568,7 @@ General.toQueryString = function(obj, url) {
 	var str = paramStr.join("&");
 	if(url) {
 		if(url.indexOf("?") >= 0) {
-			str = url + str;
+			str = url +"&"+str;
 		} else {
 			str = url + "?" + str;
 		}
@@ -12651,95 +12576,6 @@ General.toQueryString = function(obj, url) {
 
 	return str;
 }
-
-/**
- * 获取域中input集合JSON
- * @param {Object} id 域id
- * @param {Object} attrStr 属性作为键值时,属性值,默认以Id作为键
- * @param {Object} windows
- */
-General.getAllData = function(id, attrStr, windows) {
-		if(docId(id) == null) {
-			return null;
-		}
-		var vm = this;
-		var keyIsAttribute = false;
-		if(windows == undefined || windows == null) {
-			var windows = window;
-		}
-		if(attrStr != undefined && attrStr != null) {
-			keyIsAttribute = true;
-		}
-		/**
-		 * 获取input集合键值对字符串
-		 * @param {Object} Id
-		 * @param {Object} windows
-		 */
-		var inputsDataStr = function(Id, windows) {
-			//var Controls = 0; //总计数器
-			var count = 0;
-			var data = new Array();
-			//获取区域内所有input控件
-			var cs0 = windows.document.getElementById(Id).getElementsByTagName("input");
-			for(var i = 0, len = cs0.length; i < len; i++) {
-				var key;
-				if(keyIsAttribute) {
-					key = cs0[i].getAttribute(attrStr);
-				} else {
-					key = cs0[i].id;
-				}
-				if(key == null) {
-					continue;
-				}
-				var val;
-				if(cs0[i].type == "checkbox") {
-					if(cs0[i].checked) {
-						val = 1;
-					} else {
-						val = 0;
-					}
-				} else {
-					val = cs0[i].value;
-				}
-				data.push("'" + key + "':'" + cs0[i].value + "'");
-			}
-			//获取区域内所有select控件
-			var cs1 = windows.document.getElementById(Id).getElementsByTagName("select");
-			for(var i = 0, len = cs1.length; i < len; i++) {
-				var key;
-				if(keyIsAttribute) {
-					key = cs1[i].getAttribute(attrStr);
-				} else {
-					key = cs1[i].id;
-				}
-				if(key == null) {
-					continue;
-				}
-				data.push("'" + key + "':'" + cs1[i].value + "'");
-			}
-			//获取区域内所有textarea控件
-			var cs2 = windows.document.getElementById(Id).getElementsByTagName("textarea");
-			for(var i = 0, len = cs2.length; i < len; i++) {
-				var key;
-				if(keyIsAttribute) {
-					key = cs2[i].getAttribute(attrStr);
-				} else {
-					key = cs2[i].id;
-				}
-				if(key == null) {
-					continue;
-				}
-				var val = cs2[i].value.replace(/(\n)+|(\r\n)+/g, "\\n"); //<br/>;
-				data.push("'" + key + "':'" + val + "'");
-			}
-			data.push("'count':'" + (data.length) + "'");
-			data = data.join(",");
-			data = "({" + data + "})";
-			return data;
-		};
-		var data = eval(inputsDataStr(id, windows));
-		return data;
-	}
 	/**
 	 * 对象变更监听器
 	 * @param {Object} obj 对象
@@ -12755,6 +12591,28 @@ General.getAllData = function(id, attrStr, windows) {
 	 */
 General.observe = function(obj, prop, desc) {
 	Object.defineProperty(obj, prop, desc);
+}
+
+//添加类名
+General.addClass=function(el,className){
+	//已存在不予重复添加
+	if(el.className.indexOf(className)>=0){
+		return false;
+	}
+	if (el.className) {
+		el.className=el.className+" "+className;
+	} else {
+		el.className=className;
+	}
+}
+
+//移除类名
+General.delClass=function(el,className){
+	var oldClassName=el.className;
+	oldClassName = oldClassName.replace(className,"");
+	//去除两边空格
+	oldClassName = oldClassName.trim();
+	el.className=oldClassName;
 }
 
 /**
@@ -12910,6 +12768,18 @@ General.remToPX=function(rem){
 }
 
 /**
+ * px单位转换为运行中rem单位
+ * @param {String/Number} rem
+ */
+General.pxToRem=function(px){
+	if (typeof px=="string") {
+		px=px.replace("px","");
+	}
+	var val = lib.flexible.px2rem(px);
+	return val;
+}
+
+/**
  * 游览器session对象
  * 作者：PS    
  * 日期：2016-09-02
@@ -12930,8 +12800,7 @@ General.Session = function() {
 				sessionStorage.setItem(key, JSON.stringify(val));
 			} catch(e) {
 				if(sessionStorage) {
-					alert("应用缓存失败！，请尝试关闭无痕模式！");
-					alert(e);
+					alert("系统环境异常！，请尝试关闭无痕模式！");
 				}
 			}
 		};
@@ -13049,6 +12918,352 @@ General.deviceInfo = (function() {
 
 //提供通用方法 简写
 window.$G = General;
+;/*!app_core/js/zk_math.js*/
+function ZKMath(){
+	this.value = 0; //计算返回值
+	/**
+	 * 精确计算加法
+	 * @param {Number} value1  第一个操作值
+	 * @param {Number} value2  第二个操作值
+	 * @param {Object} opt //计算配置参数（可选） {Number} [precision] 计算后的精度，默认为两个操作数中的较大的小数位数  {Boolean} [full] 完整精度，默认为false，1.00将显示为1；为true时1.00将显示为1.00
+	 * @example 
+	 * 
+	 * var fishMath = new FishMath();
+	 * fishMath.add(1,2);
+	 * 
+	 * var a=8.2;
+	 * var b=0.2;
+	 * console.log(a+b);//8.399999999998 计算结果有误差
+	 * console.log(fishMath.add(a,b).value);//8.4
+	 * a=0.1;
+	 * b=0.2;
+	 * console.log(a + b);  //0.30000000000000004
+	 * var opt = {precision:2};
+	 * console.log(fishMath.add(0.1,0.2,opt).value);  //0.3
+	 * @return {Number} 计算结果
+	 */
+	this.add = function () {
+		var argu1 = arguments[0];
+		var argu2 = arguments[1];
+		var argu3 = arguments[2];
+		var value1,value2,opt;
+		//console.log(this);
+		if(typeof argu1 != "number"){
+			console.log('计算参数错误');
+			return false;
+		}
+		if(argu2){ //如果存在参数2 则判断传入的是计算值还是配置
+			if(typeof argu2 == "number"){ //如果第二个参数为数值，则表示为双值计算
+				value1 = argu1;
+				value2 = argu2;
+				opt = argu3;
+			}
+			else if(typeof argu2 == "object"){  //第二参数不是数字则表示为单值计算
+				console.log(this.value);
+				value1 = this.value;
+				value2 = argu1;
+				opt = argu2;
+			}
+			else{
+				console.log('计算参数错误');
+				return false;
+			}
+		}
+		else{//不存在则是单计算
+			value1 = this.value;
+			value2 = argu1;
+		}
+
+		
+		if(!opt){
+			opt = {};	
+		}
+		if (!opt.precision && opt.precision !== 0) {
+			var i = this.dotIndex(value1);
+			//console.log('dotIndex  ' + i);
+			if (i == -1) {
+				return null;
+			}
+			var j = this.dotIndex(value2);
+			if (j == -1) {
+				return null;
+			}
+			//console.log('dotIndex  ' + j);
+
+			if (i < j) {
+				opt.precision = j;
+			}
+			else {
+				opt.precision = i;
+			}
+		}
+		this.value = value1 * 1 + value2 * 1;
+		this.value = this.value.toFixed(opt.precision);
+		if (!opt.full) {
+			this.value = this.value * 1;
+		}
+		return this;
+	},
+
+	/**
+	 * 精确计算减法
+	 * @param {Number} value1  第一个操作值
+	 * @param {Number} value2  第二个操作值
+	 * @param {Object} opt //计算配置参数（可选） {Number} [precision] 计算后的精度，默认为两个操作数中的较大的小数位数  {Boolean} [full] 完整精度，默认为false，1.00将显示为1；为true时1.00将显示为1.00
+	 * @example 
+	 * var fishMath = new FishMath();
+	 * var a=8.2;
+	 * var b=0.2;
+	 * console.log(a-b);//7.999999999999999 计算结果有误差
+	 * console.log(fishMath.sub(a,b).value);//8
+	 * @return {Number} 计算结果
+	 */
+	this.sub = function () {
+		var argu1 = arguments[0];
+		var argu2 = arguments[1];
+		var argu3 = arguments[2];
+		var value1,value2,opt;
+		//console.log(this);
+		if(typeof argu1 != "number"){
+			console.log('计算参数错误');
+			return false;
+		}
+		if(argu2){ //如果存在参数2 则判断传入的是计算值还是配置
+			if(typeof argu2 == "number"){ //如果第二个参数为数值，则表示为双值计算
+				value1 = argu1;
+				value2 = argu2;
+				opt = argu3;
+			}
+			else if(typeof argu2 == "object"){  //第二参数不是数字则表示为单值计算
+				console.log(this.value);
+				value1 = this.value;
+				value2 = argu1;
+				opt = argu2;
+			}
+			else{
+				console.log('计算参数错误');
+				return false;
+			}
+		}
+		else{//不存在则是单计算
+			value1 = this.value;
+			value2 = argu1;
+		}
+
+		
+		if(!opt){
+			opt = {};	
+		}
+		if (!opt.precision && opt.precision !== 0) {
+			var i = this.dotIndex(value1);
+			//console.log('dotIndex  ' + i);
+			if (i == -1) {
+				return null;
+			}
+			var j = this.dotIndex(value2);
+			if (j == -1) {
+				return null;
+			}
+			//console.log('dotIndex  ' + j);
+
+			if (i < j) {
+				opt.precision = j;
+			}
+			else {
+				opt.precision = i;
+			}
+		}
+		this.value = value1 * 1 - value2 * 1;
+		this.value = this.value.toFixed(opt.precision);
+		if (!opt.full) {
+			this.value = this.value * 1;
+		}
+		return this;
+	},
+	/**
+	 * 精确计算乘法
+	 * @param {Number} value1  第一个操作值
+	 * @param {Number} value2  第二个操作值
+	 * @param {Object} opt //计算配置参数（可选） {Number} [precision] 计算后的精度，默认为两个操作数中的较大的小数位数  {Boolean} [full] 完整精度，默认为false，1.00将显示为1；为true时1.00将显示为1.00
+	 * @example 
+	 * 	var fishMath = new FishMath();
+	 *  var a = 8888.1;
+	 *	var b = 0.0002;
+	 *	console.log(a * b); //1.7776200000000002
+	 *  var opt = {precision:2}
+	 *	console.log(fishMath.mul(a,b,opt)); //1.78
+	 *  opt.precision = 6;
+	 *	console.log(fishMath.mul(a,b,opt)); //1.77762
+	 *  opt.full = true; 
+	 *	console.log(fishMath.mul(a,b,opt)); //1.777620
+	 * @return {Number} 计算结果
+	 */
+	this.mul = function () {
+		var argu1 = arguments[0];
+		var argu2 = arguments[1];
+		var argu3 = arguments[2];
+		var value1,value2,opt;
+		//console.log(this);
+		if(typeof argu1 != "number"){
+			console.log('计算参数错误');
+			return false;
+		}
+		if(argu2){ //如果存在参数2 则判断传入的是计算值还是配置
+			if(typeof argu2 == "number"){ //如果第二个参数为数值，则表示为双值计算
+				value1 = argu1;
+				value2 = argu2;
+				opt = argu3;
+			}
+			else if(typeof argu2 == "object"){  //第二参数不是数字则表示为单值计算
+				console.log(this.value);
+				value1 = this.value;
+				value2 = argu1;
+				opt = argu2;
+			}
+			else{
+				console.log('计算参数错误');
+				return false;
+			}
+		}
+		else{//不存在则是单计算
+			value1 = this.value;
+			value2 = argu1;
+		}
+
+		
+		if(!opt){
+			opt = {};	
+		}
+		if (!opt.precision && opt.precision !== 0) {
+			var i = this.dotIndex(value1);
+			//console.log('dotIndex  ' + i);
+			if (i == -1) {
+				return null;
+			}
+			var j = this.dotIndex(value2);
+			if (j == -1) {
+				return null;
+			}
+			//console.log('dotIndex  ' + j);
+
+			if (i < j) {
+				opt.precision = j;
+			}
+			else {
+				opt.precision = i;
+			}
+		}
+		this.value = value1 * 1 * value2 * 1;
+		this.value = this.value.toFixed(opt.precision);
+		if (!opt.full) {
+			this.value = this.value * 1;
+		}
+		return this;
+	},
+	/**
+	 * 精确计算除法
+	 * @param {Number} value1  第一个操作值
+	 * @param {Number} value2  第二个操作值
+	 * @param {Object} opt //计算配置参数（可选） {Number} [precision] 计算后的精度，默认为两个操作数中的较大的小数位数  {Boolean} [full] 完整精度，默认为false，1.00将显示为1；为true时1.00将显示为1.00
+	 * @example 
+	 */
+	this.div = function () {
+		var argu1 = arguments[0];
+		var argu2 = arguments[1];
+		var argu3 = arguments[2];
+		var value1,value2,opt;
+		//console.log(this);
+		if(typeof argu1 != "number"){
+			console.log('计算参数错误');
+			return false;
+		}
+		if(argu2){ //如果存在参数2 则判断传入的是计算值还是配置
+			if(typeof argu2 == "number"){ //如果第二个参数为数值，则表示为双值计算
+				value1 = argu1;
+				value2 = argu2;
+				opt = argu3;
+			}
+			else if(typeof argu2 == "object"){  //第二参数不是数字则表示为单值计算
+				console.log(this.value);
+				value1 = this.value;
+				value2 = argu1;
+				opt = argu2;
+			}
+			else{
+				console.log('计算参数错误');
+				return false;
+			}
+		}
+		else{//不存在则是单计算
+			value1 = this.value;
+			value2 = argu1;
+		}
+
+		
+		if(!opt){
+			opt = {};	
+		}
+		if (!opt.precision && opt.precision !== 0) {
+			var i = this.dotIndex(value1);
+			//console.log('dotIndex  ' + i);
+			if (i == -1) {
+				return null;
+			}
+			var j = this.dotIndex(value2);
+			if (j == -1) {
+				return null;
+			}
+			//console.log('dotIndex  ' + j);
+
+			if (i < j) {
+				opt.precision = j;
+			}
+			else {
+				opt.precision = i;
+			}
+		}
+		this.value = value1 * 1 / value2 * 1;
+		this.value = this.value.toFixed(opt.precision);
+		if (!opt.full) {
+			this.value = this.value * 1;
+		}
+		return this;
+	},
+
+
+	this.dotIndex = function (value) {
+		var n = new Number(value);
+		if (isNaN(n)) {
+			return -1;
+		}
+		n = n.toString();
+		var i = n.indexOf(".");
+		var j = n.lastIndexOf("e");
+		if (i == -1)
+			i = 0;
+		else
+			if (j == -1) {
+				i = n.length - i - 1;
+			}
+			else {
+				i = j - i - 1;
+			}
+		if (j > -1) {
+			var k = n.substring(j + 2) * 1;
+			var j = n.lastIndexOf("e+");
+			if (j > -1) {
+				i -= k;
+				if (i < 0)
+					i = 0;
+			}
+			else {
+				i += k;
+			}
+		}
+		return i;
+	}
+
+}
 ;/*!app_core/js/zk_app_info.js*/
 function ZKAppInfo(_callback) {
     var _self = this;
@@ -13070,13 +13285,13 @@ function ZKAppInfo(_callback) {
     if (info.isInWebView) {
         //尝试调用App 公共初始设置接口 若调用失败 则不做任何处理
         $HyApp.excute("HYACommonCtrl", "init", {
-            title:"兴手付",
+            title:"",
             stopInjectJS:1
         });
         //尝试调用App 若调用失败 则默认按照支持的最低版本3.0.5运行
         $HyApp.excute("HYAMySetting", "get", null, function (result) {
             if (result.status != 0) {
-                $log(result);
+                $log.frame(result);
                 return false;
             }
             info.countingAudio = result.data.countingAudio;
@@ -13092,11 +13307,12 @@ function ZKAppInfo(_callback) {
             version = array.join("");
             version = parseInt(version);
             info.appVersionNum = version;
+            $App.Info.isInWebView=true;
             _callback(info);
         }, function (code, desc) {
             info.appVersion = "3.0.3";
             info.appVersionNum = 30003;
-            $log("尝试调用App获取App信息失败！视为老版本兼容处理！");
+            $log.frame("尝试调用App获取App信息失败！视为老版本兼容处理！");
             _callback(info);
         });
     }else{
@@ -13105,21 +13321,233 @@ function ZKAppInfo(_callback) {
         _callback(info);
     }
 }
-;/*!app_core/js/zk_http.js*/
+;/*!app_core/js/zk_layer.js*/
 /**
- * 网路请求
- * 2017-04-14 14:43:15 
- * @author PS
+ * 弹层
+ * @param {Object} vueOptions 挂载弹层的Vue构造参数
+ */
+function ZKLayer(vueOptions) {
+    var rootVM=null;
+    create();
+    this.Modal=Modal;
+    this.setViewModal=setViewModal;
+    //当前显示中的模态窗数
+    var nowShowLayerCount=0;
+    //添加移动事件标记
+    var addtouchmoveEventTag=false;
+    // 阻止页面滚动事件
+    var _touchmoveFunc=function(e){
+        e.preventDefault();
+    };
+    /**
+     * 创建对象
+     */
+    function create(){
+        vueOptions.data["modals"] = [];
+        var dom = document.querySelector(vueOptions.el);
+        var div = document.createElement("div");
+        div.setAttribute(":is", "item");
+        div.setAttribute("v-for", "item in modals");
+        div.setAttribute("ref", "modals");
+        dom.appendChild(div);
+    }
+
+    /**
+     * 模态窗对象
+     * @param {Object} vmOpt
+     * @param {Function} callback 模态窗构造完成后的参数
+     */
+    function Modal(vmOpt,callback){
+        var _t = this;
+        // 视图模型
+        var modalVM;
+        //模态窗唯一标识符
+        var modalId=200+$App.getCode();
+        //基础构造参数        
+        var modalVMOpt={
+            data:function(){
+                return {
+                    zkModal:{
+                        active:false,
+                        // 模态窗 0.默认完全自定义 1.底部缓慢弹出 2.右侧缓慢进入
+                        type:0,
+                        //modal显示状态
+                        state:0,
+                        //层级
+                        zIndex:modalId,
+                        //是否控制显示
+                        ctrlShow:false
+                    }
+                }
+            },
+            computed:{
+                zkModalContentCss:function(){
+                    var vm =this;
+                    var res={};
+                    if (vm.zkModal.type==1) {
+                        res["zk-out-down"]=true;
+                        if(this.zkModal.active)res["zk-out-down"]=false;;
+                    }else if(vm.zkModal.type==2){
+
+                    }
+                    return res;
+                }
+            },
+            mounted:function(){
+                if(callback)callback(this);
+            },
+            watch:{
+                // "zkModal.active":function(newVal,oldVal){
+                //     var vm=this;
+                //     if (newVal==oldVal)return false;
+                //     if (newVal==true) {
+                //         nowShowLayerCount++;
+                //         if (nowShowLayerCount>0) {
+                //             if (!addtouchmoveEventTag){
+                //                 document.body.addEventListener("touchmove",_touchmoveFunc);
+                //                 addtouchmoveEventTag=true;
+                //             }
+                //         }
+                //     } else {
+                //         nowShowLayerCount--;
+                //         if (nowShowLayerCount==0) {
+                //             document.body.removeEventListener("touchmove",_touchmoveFunc);
+                //             addtouchmoveEventTag=false;
+                //         }
+                //     }
+                // }
+            },
+            methods:{
+                //获得模态窗实例
+                getModal:function(){
+                    return _t;
+                }
+            }
+        }
+        // 继承复写VM默认构造选项
+        vmOpt.extends=modalVMOpt;
+        // 尝试显示次数
+        var tryCount=0;
+        
+        _t.show=show;
+        _t.hide=hide;
+        _t.destroy=destroy;
+        //获取设置的数据
+        var data={};
+        if (vmOpt.data) {
+           data = vmOpt.data();
+        }
+        var rootHTML;
+        // 嵌入默认动画
+        if (data.zkModal&&data.zkModal.type!=0) {
+            rootHTML='<div class="zk-layer-modal" :style="{\'z-index\':zkModal.active?zkModal.zIndex:-1}" v-zk-visible="zkModal.active">'
+            +'<div class="zk-layer-content">'
+            +'<div class="zk-mask" v-show="zkModal.active"></div><div class="zk-content zk-animal" :class="zkModalContentCss">'+
+            vmOpt['template']
+            +'</div></div></div>';
+        }
+        //最终构造参数 避免同一模态窗复用
+        var finnalOpt={
+            extends:vmOpt,
+            template:rootHTML,
+            mounted:function(){
+                modalVM=this;
+            },
+            modalId:modalId
+        }
+        pushModal();
+        function pushModal(){
+            if (rootVM) {
+                tryCount=0;
+                rootVM.modals.push(finnalOpt);
+                //最多允许同时存在10个窗口
+                if (rootVM.modals.length>10)rootVM.modals.splice(0, 1);
+            } else {
+                // 若根视图还未构建500ms后尝试 最多尝试5次 尝试失败直接报错取消
+                if (tryCount<=50) {
+                    tryCount++;
+                    setTimeout(function() {
+                        pushModal();
+                    }, 500);
+                } else {
+                    tryCount=0;
+                    $log.error("若根视图还未构建500ms后尝试,最多尝试50次!");
+                }
+                 
+            }
+        }
+       
+        
+        // 显示模态窗
+        function show(params){
+            if(modalVM){
+                tryCount=0;
+                modalVM.show(params);
+                //是否自行控制显示与否 未自行控制则统一添加
+                if (!modalVM.zkModal.ctrlShow) {
+                    modalVM.zkModal.active=true;
+                }
+            }else{
+                // 若模态窗还未构建500ms后尝试弹出 最多尝试30次 尝试失败直接报错取消
+                if (tryCount<=30) {
+                    tryCount++;
+                    setTimeout(function(){
+                        //当前绑定的页面模型已不存在时直接排除
+                        if (!rootVM || rootVM._isDestroyed) return false;
+                        _t.show(params);
+                    },500);
+                } else {
+                    tryCount=0;
+                    $log.error("模态窗显示,尝试三次依然失败!");
+                }
+            }
+        }
+
+        // 隐藏模态窗
+        function hide(params){
+            if(modalVM)modalVM.hide(params);
+            //是否自行控制显示与否 未自行控制则统一添加
+            if (!modalVM.zkModal.ctrlShow) {
+                modalVM.zkModal.active=false;
+            }
+        }
+
+        //删除模态窗
+        function destroy(){
+            var i=-1;
+            for (var index=0,len=rootVM.modals.length; index < len; index++) {
+                if(rootVM.modals[index].modalId==modalId){
+                    i=index;
+                    break;
+                };
+            }
+            if(i!=-1)rootVM.modals.splice(i,1);
+        }
+    }
+
+    /**
+     * 设置最终挂载的视图模型对象
+     * @param {Object} vm 
+     */
+    function setViewModal(vm){
+        rootVM=vm;
+    }
+}
+;/*!app_core/js/zk_http_config.js*/
+/**
+ * http默认配置信息
+ * @param {Object} config
+ * @param {Object} userInfo
  * @param {Object} appInfo app相关信息 
  */
-function ZKHttp(userInfo, appInfo) {
+function ZKHttpConfig(config, userInfo, appInfo) {
 	var token = userInfo.token;
 	var userId = userInfo.userId;
 	var mct = 9;
-	if (appInfo.isInWebView) {
-		if ($G.deviceInfo.isSystem.ios) {
+	if(appInfo.isInWebView) {
+		if($G.deviceInfo.isSystem.ios) {
 			mct = 2;
-		} else if ($G.deviceInfo.isSystem.android) {
+		} else if($G.deviceInfo.isSystem.android) {
 			mct = 1;
 		}
 	}
@@ -13128,7 +13556,8 @@ function ZKHttp(userInfo, appInfo) {
 	//最低Http版本为3.0.5
 	var verStr = $App.lessAppVer("3.0.5") ? "3.0.5" : appInfo.appVersion;
 	var appVerNumStr = $App.lessAppVer("3.0.5") ? "305" : appInfo.appVersion.replaceAll("\\.", "");
-	$.ajaxSetup({
+
+	var opt = {
 		contentType: "application/json;charset=utf-8",
 		processData: false,
 		headers: {
@@ -13148,10 +13577,28 @@ function ZKHttp(userInfo, appInfo) {
 			"m-up": "",
 			"m-uc": "",
 			"m-ud": "",
-			"appVersion": appVerNumStr
+			"appVersion": appVerNumStr,
+			"Content-type":"application/json"
 		},
 		dataType: "json"
+	};
+	config.headers = $G.objSetDefaultVal(config.headers,opt.headers);
+	config = $G.objSetDefaultVal(config,opt);
+	return config;
+}
+;/*!app_core/js/zk_http.js*/
+/**
+ * 网路请求
+ * 2017-04-14 14:43:15 
+ * @author PS
+ */
+function ZKHttp(config) {
+	$.ajaxSetup({
+		// contentType: config.contentType,
+		processData: config.processData,
+		// dataType: config.dataType
 	});
+	$log.frame("http全局默认配置,config:",config);
 
 	window.$App_httpStack = {};
 	/**
@@ -13161,6 +13608,9 @@ function ZKHttp(userInfo, appInfo) {
 		if (options.commonDel == false) { //是否设置禁用公共 处理
 			return false;
 		}
+		options.headers=config.headers;
+		options.contentType=config.contentType;
+		options.dataType=config.dataType;
 		//若已存在相同域名请求则放弃已发起请求
 		if ($App_httpStack[options.url]) {
 			//放弃之后的请求
@@ -13181,8 +13631,9 @@ function ZKHttp(userInfo, appInfo) {
 
 		//自定义传输数据的格式
 		if (typeof options.data == "object" && options.processData == false) {
-			if (options.type == "get") {
+			if (options.type.toLowerCase() == "get") {
 				options.data = $G.toQueryString(options.data);
+				options.processData=false;
 			} else {
 				if (options.convertNull === false) {
 					options.data = JSON.stringify(options.data);
@@ -13190,6 +13641,10 @@ function ZKHttp(userInfo, appInfo) {
 					options.data = JSON.stringify(options.data, handlePostSwitchData);
 				}
 			}
+		}
+		// 解决后端坑爹问题,用Content-type在request判断输入数据格式问题
+		if(!options.data&&options.processData == false){
+			options.data="{}";
 		}
 
 		var complete = options.complete;
@@ -13207,6 +13662,20 @@ function ZKHttp(userInfo, appInfo) {
 		if (options.useSuccessDel != false) {
 			var success = options.success;
 			options.success = function (result, status, xhr) {
+				if (typeof result=="string") {
+					try{
+						result = JSON.parse(result);
+					}catch(e){
+						$log.error("服务端返回数据尝试转化为标准JSON对象失败",result);
+					}
+				} 
+				if (config.sucessDeal){
+					var sucessDealRes = config.sucessDeal(result);
+					//是否直接终止后续处理
+					if (sucessDealRes==false) {
+						return false;
+					} 
+				}
 				if (result.status != undefined) {
 					if (result.status == 1 || result.status == "1") {
 						$App.msg(result.msg);
@@ -13242,7 +13711,7 @@ function ZKHttp(userInfo, appInfo) {
 						return false;
 					}
 				} else {
-					if (result.indexOf("请登录") >= 0) {
+					if (typeof result=="string"&&result.indexOf("请登录") >= 0) {
 						$App.msg("无权限或者未登录！请重新登陆");
 						setTimeout(function () {
 							$App.go({
@@ -13302,7 +13771,7 @@ function ZKHttp(userInfo, appInfo) {
 			$App.msg("服务器异常,请联系管理员!");
 		} else if (status == 200) {
 			if (XMLHttpRequest.responseURL != "") {
-				window.top.location.href = XMLHttpRequest.responseURL
+				window.top.location.href = XMLHttpRequest.responseURL;
 			} else {
 				$App.msg("解析数据失败!");
 			}
@@ -13320,7 +13789,7 @@ function ZKHttp(userInfo, appInfo) {
 			if (textStatus == "abort") {
 				//强行终止
 			} else {
-				$App.msg("错误请求");
+				// $App.msg("错误请求");
 			}
 		}
 	}
@@ -13336,7 +13805,59 @@ function ZKHttp(userInfo, appInfo) {
 		}
 		return value;
 	}
+
+	//vue环境下网路插件对象
+	this.vuePlugin = {
+		install: function (vue, options) {
+			vue.prototype.$http = function (url, data, options) {
+				var vm = this;
+				return new Promise(function (resolve, reject) {
+					var opt = {
+						type: options.type,
+						url: url,
+						success: function (result, status, xhr) {
+							//当前绑定的页面模型已不存在时直接排除
+							if (!vm || vm._isDestroyed) return false;
+							resolve(result,status, xhr);
+						},
+						error: function (XMLHttpRequest, textStatus, errorThrown) {
+							//当前绑定的页面模型已不存在时直接排除
+							if (!vm || vm._isDestroyed) return false;
+							if (reject) reject(XMLHttpRequest, textStatus, errorThrown);
+						}
+					};
+					if (data) {
+						opt.data=data;
+					}
+					$.ajax(opt);
+				});
+			};
+			//httpGet请求
+			vue.prototype.$get = function (url, data, options) {
+				if (!options) {
+					options = {
+						type: "GET"
+					};
+				} else {
+					options.type = "GET";
+				}
+				return this.$http(url, data, options);
+			}
+			//httpPost请求	
+			vue.prototype.$post = function (url, data, options) {
+				if (!options) {
+					options = {
+						type: "POST"
+					};
+				} else {
+					options.type = "POST";
+				}
+				return this.$http(url, data, options);
+			}
+		}
+	}
 }
+
 ;/*!app_core/js/zk_observer.js*/
 /**
  * 通知中心 / 发布订阅中心
@@ -13407,7 +13928,7 @@ function ZKObserver() {
 		if(subjects[subjectName]){
 			delete subjects[subjectName];
 		}else{
-			$log("主题不存在",subjectName);
+			$log.error("主题不存在",subjectName);
 		}
 	}
 
@@ -13457,12 +13978,12 @@ function HyApp() {
 				methodName: methodName,
 				sucessCallback: function(result){
 					if (sucessCallback) {
-						$log("原生返回:", result);
+						$log.frame("原生返回:", result);
 						sucessCallback(result);
 					}
 				},
 				errorCallback: function (code, result) {
-					$log(code, result);
+					$log.frame(code, result);
 					clearTimeout(requests[id].timer);
 					if (errorCallback) {
 						errorCallback(code, result);
@@ -13478,7 +13999,7 @@ function HyApp() {
 							id: id,
 							params: params
 						};
-						$log("调用原生:", body);
+						$log.frame("调用原生:", body);
 						window.webkit.messageHandlers.HyAppNative.postMessage(JSON.stringify(body));
 					} else {
 						if (typeof params != "object") {
@@ -13486,11 +14007,11 @@ function HyApp() {
 						} else {
 							params = JSON.stringify(params);
 						}
-						$log("调用原生:", params);
+						$log.frame("调用原生:", params);
 						window.HyAppNative.excute(className, methodName, id, params);
 					}
 				} catch (e) {
-					$log(e);
+					$log.frame(e);
 					requests[id].errorCallback(404, "调用原生Api失败！请求Id:"+id);
 				}
 			}, 1);
@@ -13501,7 +14022,7 @@ function HyApp() {
 				delete requests[id];
 			}, timeOut);
 		} else {
-			$log("请在内嵌App中运行该程序！");
+			$log.frame("请在内嵌App中运行该程序！");
 		}
 	}
 
@@ -13540,7 +14061,7 @@ function HyApp() {
 			if (typeof result != "string") {
 				throw new Error("result 必须是JSON字符串");
 			} else {
-				$log(result);
+				$log.frame(result);
 				result = JSON.parse(result);
 				$Observer.publish(key, result);
 			}
@@ -13626,6 +14147,22 @@ $App.getContent = function (code, calback) {
 	});
 }
 
+/**
+ * 按内容Code列表获取内容列表
+ * @param {Array} codes
+ * @param {Function} calback(val)
+ */
+$App.getContentListByContentCodes = function (codes, calback) {
+	$.post($App.ApiRoot + "/operator/getContentListByContentCodes", {
+		contentCodes: codes
+	}, function (result, status, xhr) {
+		if (result.status != 0) {
+			return false;
+		}
+		calback(result.data);
+	});
+}
+
 ;/*!app_core/js/zk_cache.js*/
 
 function ZKCache() {
@@ -13643,29 +14180,500 @@ function ZKCache() {
     * @param {String} h5Version H5版本号
     */
     _self.checkH5Version = function (h5Version) {
-        if($Config.Env=="Dev")return false;
-        $.ajax({
-            type: 'GET',
-            url:$App.RootUrl+"/app_common/app_info.html",
-            commonDel:false,
-            success:function (result, status, xhr) {
-                if(!result)return false;
-                var nowVerNum = parseInt(h5Version);
-                var WebAppVersionNum = parseInt(result.newVersion);
-                if(isNaN(WebAppVersionNum)) return false;
-                var session = $G.Session();
-                if(nowVerNum < WebAppVersionNum){
-                    //单次最多尝试三次进行刷新
-                    if (cacheData.nowReloadCount<3) {
-                        //强制刷新
-                        $App.go(0);
-                        cacheData.nowReloadCount++;
-                        cache.set("ZKCache",cacheData);
-                    }
-                };
-            }
+        if(!$App.ProjectName||$Config.Env=="Dev")return false;
+        var url=$App.RootUrl+'/app_common/app_info.html';
+        $.get(url,{
+            "_t":Math.random()*1000
+        },function(result){
+            if(!result)return false;
+            var nowVerNum = parseInt(h5Version);
+            var webAppVersionNum = parseInt(result.newVersion);
+            if(isNaN(webAppVersionNum)) return false;
+            var session=$G.Session();
+            if(nowVerNum < webAppVersionNum){
+                //单次最多尝试三次进行刷新
+                if (cacheData.nowReloadCount<3) {
+                    //强制刷新
+                    $App.go(0);
+                    cacheData.nowReloadCount++;
+                    cache.set("ZKCache",cacheData);
+                }
+            };
         });
     }
+}
+;/*!app_core/js/zk_core.js*/
+/**
+ * 框架核心库
+ * 2017-07-22 15:44:52 
+ * @author PS
+ * @param {*} config 
+ */
+function ZKCore(config) {
+    //导出插件
+    this.vuePlugin={
+        install:install
+    }
+    /**
+     * 插件
+     * @param {*} _vue Vue 构造器
+     * @param {*} options 
+     */
+    function install(_vue, options){
+        /**
+         * 显示页面
+         */
+        _vue.prototype.show=function(data,callback){
+            this.$el.style.display="";
+            if(callback)callback();
+        }
+
+        /**
+         * 隐藏页面
+         */
+        _vue.prototype.hide=function(data,callback){
+            this.$el.style.display="none";
+            if(callback)callback();
+        }
+
+        /**
+         * 刷新页面接口
+         */
+        _vue.prototype.refresh=function(data,callback){
+            $log.error("该方法还未实现！vm.refresh(data,callback)");
+        }
+
+        /**
+         * 延迟执行
+         */
+        _vue.prototype.setTimeOut=function(msTime){
+            var _t=this;
+            var _setTimeout;
+            // 构造为Promise对象
+            var promise = new Promise(function (resolve, reject) {
+                _setTimeout = setTimeout(function(){
+                    //当前绑定的页面模型已不存在时直接排除
+					if (!_t || _t._isDestroyed) return false;
+                    resolve();
+                },msTime);
+            });
+            // 关闭当前定时器
+            promise.close = function(){
+                if(_setTimeout)clearTimeout(_setTimeout);
+                return this;
+            };
+            return promise;
+        }
+
+        _vue.mixin({
+            beforeRouteEnter: function (to, from, next) {
+                console.log(from.path);
+                console.log(JSON.stringify(to));
+                // 在渲染该组件的对应路由被 confirm 前调用
+                // 不！能！获取组件实例 `this`
+                // 因为当守卫执行前，组件实例还没被创建
+                next(function(vm) {
+                    if (vm.$root != vm.$parent) return false;
+                    // 记录前一个页面路由
+                    vm.zkReferrer = from;
+                });
+            },
+            beforeRouteUpdate: function (to, from, next) {
+                // 在当前路由改变，但是该组件被复用时调用
+                // 举例来说，对于一个带有动态参数的路径 /foo/:id，在 /foo/1 和 /foo/2 之间跳转的时候，
+                // 由于会渲染同样的 Foo 组件，因此组件实例会被复用。而这个钩子就会在这个情况下被调用。
+                // 可以访问组件实例 `this`
+                // console.log(this);
+            },
+            beforeRouteLeave: function (to, from, next) {
+                if (this.$root != this.$parent) {
+                    next();
+                    return false;
+                }                
+                // 导航离开该组件的对应路由时调用
+                // 可以访问组件实例 `this`
+                // 返回时,标记回收该组件
+                if (to.fullPath == this.zkReferrer.fullPath) {
+                    this.zkNeedDestroy=true;
+                }
+                next();
+            },
+            // 组件处于停止状态(keepaline);
+            deactivated: function(){
+                if (this.$root != this.$parent) return false;
+                if (this.zkNeedDestroy==true) {
+                   this.$destroy(); 
+                }
+            }
+            
+        });
+    }
+
+    /**
+	 * 字数限制 指令
+	 * 注:用于限制字数 超过字数超出部分自动换为...
+	 */
+	Vue.directive('zk-limit', {
+		inserted: zkLimit,
+		// 当绑定元素插入到 DOM 中。
+		update: zkLimit
+    });
+
+	function zkLimit(el, binding, vnode, oldVnode) {
+		if (typeof binding.value == "number"&&binding.arg!="ellipsis-row") {
+			if (el.innerHTML.length > binding.value) {
+				el.innerHTML = el.innerHTML.substr(0, binding.value) + "...";
+			}
+        }
+        //按行省略
+        if(binding.arg=="ellipsis-row"){
+            el.style.textOverflow="ellipsis";
+            el.style.overflow="hidden";
+            el.style.display="inline-block";
+            if (binding.value==1) {
+                el.style.whiteSpace="nowrap";
+            } else {
+                el.style.display="-webkit-box";
+                el.style.wordBreak="break-all";
+                el.style.wordWrap="break-word";
+                el.style.webkitLineClamp=binding.value;
+                el.style.webkitBoxOrient="vertical";
+            }
+        }
+    }
+    
+    /**
+	 * 占位显示 / 隐藏
+	 */
+	Vue.directive('zk-visible', {
+		inserted: zkVisible,
+		// 当绑定元素插入到 DOM 中。
+		update: zkVisible
+    });
+
+    function zkVisible(el, binding, vnode, oldVnode) {
+        if (binding.value) {
+            el.style.visibility="visible";
+        } else {
+            el.style.visibility="hidden";
+        }
+    }
+
+     /**
+	 * 新增增强型href功能
+	 */
+	Vue.directive('zk-src', {
+		inserted: zkSrc,
+		// 当绑定元素插入到 DOM 中。
+		update: zkSrc
+    });
+
+    /**
+     * 具备src功能的指令
+     * @param {*} el 
+     * @param {*} binding 
+     * @param {*} vnode 
+     * @param {*} oldVnode 
+     */
+	function zkSrc(el, binding, vnode, oldVnode) {
+        //避免数据相同重复加载图片 binding.oldValue==undefined 为初次设置数据
+        if (binding.value==binding.oldValue&&binding.oldValue!=undefined)return false;
+        var src;
+        if (el.tagName.toUpperCase() =="IMG") {
+            if(!binding.value||binding.value==""||binding.value==null){
+                //已经设置有src值说明存在明确图片 则没必要加载默认图片
+                el.src=$App.RootUrl+'/app_core/img/def_seat.png?v=1';
+                $G.addClass(el,"zk-defau-img");
+                //比较元素高宽选择默认图合适的适配方式
+                if (el.offsetWidth>el.offsetHeight) {
+                    $G.addClass(el,"zk-defau-img-hfit");
+                } else {
+                    $G.addClass(el,"zk-defau-img-wfit");
+                }
+                return false;             
+            };
+            //为基于根目录的相对路径时
+            if (binding.value.indexOf("/")==0){
+                src=$App.RootUrl+binding.value;
+                el.setAttribute("src",src);
+            }else if(binding.value.indexOf("://")>=0){
+                //绝对路径时
+                src=binding.value;
+                el.setAttribute("src",src);
+            }else{
+                //其他方式路径
+                throw Error("请使用'/'或者'http://','https://'等开头的路径表示方式!");
+            }
+            //设置适配方式 长边 or 短边
+            if (binding.modifiers.lfit) {
+                $G.addClass(el,"zk-img-lfit");
+            } else if(binding.modifiers.sfit) {
+                $G.addClass(el,"zk-img-sfit");
+            }
+        }
+    }
+}
+;/*!app_core/js/zk_route.js*/
+/**
+ * 路由控制
+ * 2017-08-12 14:01:06 
+ * @author PS
+ */
+function ZKRoute() {
+    var _self=this;
+    _self.go = go;
+    _self.history=[];
+    _self.saveParams=saveParams;
+
+    /**
+     * 页面跳转
+     * @param {Object} val
+     * val:
+     * @param {String / Number} path 地址
+     * @param {Function} goBeforeCallback 跳转前调用
+     * @param {Boolean} isReplace 是否替换
+     * @param {Boolean} isTopGo 是否在最顶层页面框架打开链接
+     */
+    function go(val) {
+        var type = typeof val;
+        if (type == 'string' || type == 'number') {
+            val = {
+                path: val
+            };
+        }
+        //非url连接携带参数
+        if (val.params) {
+            saveParams(val);
+        }
+        // 原始值
+        var orgValPath = val.path;
+        val.path = ""+val.path;
+        // 跳转前回调
+        if (val.goBeforeCallback) {
+            val.goBeforeCallback();
+        }
+
+        //为负数时为 回退步数 或者前进步数 为0为刷新
+        if(typeof orgValPath == 'number'){
+            numPathHandle(orgValPath,false);
+            return false;
+        }
+
+        var isSPA =testIsSPA(val);
+        //单页时处理
+        if (window.$App_SPA_Router && isSPA) {
+            if (val.isReplace) {
+                $App_SPA_Router.replace(val);
+                var lastVal=_self.history.pop();
+                if (lastVal) {
+                     //加入历史栈记录中
+                    _self.history.push(val);
+                }
+            } else {
+                $App_SPA_Router.push(val);
+                //加入历史栈记录中
+                _self.history.push(val);
+            }
+            return true;
+        }
+
+        //多页路由跳转
+        //为相对路径时
+        if (val.path.indexOf('/') == 0) {
+            //基于根目录的路径时 修正为绝对路径 兼容file://协议
+            val.path = $App.RootUrl + val.path;
+        }
+        //url链接携带参数
+        if (val.query) {
+            val.path = $G.toQueryString(val.query, val.path);
+        }
+        if (val.isTopGo) {
+            window.top.location.href = val.path;
+        } else {
+            if (val.isReplace) {
+                window.location.replace(val.path);
+            } else {
+                window.location.href = val.path;
+            }
+        }
+    }
+    /**
+     * 路由返回处理
+     * @param {Number} num 返回步数
+     */
+    function numPathHandle(num){
+        //刷新当前页面
+        if (num == 0) {
+            window.location.href = window.location.href;
+            window.location.reload(true);
+            return true;
+        }
+
+        var steps=num*-1;
+        // if(_self.history.length>=steps){
+            var endIndex=_self.history.length-steps;
+            //重设回退后的路由历史
+            _self.history.splice(endIndex,steps);
+            if(testIsSPA({path:window.location.href})){
+                $App_SPA_Router.go(num);
+            }else{
+                history.go(num);
+            }
+        // }else{
+        //     if ($App.Page.HomeIndex) {
+        //         //无返回时返回首页
+        //         _self.go({
+        //             path:$App.Page.HomeIndex,
+        //             isReplace:true
+        //         }); 
+        //     }
+        // }
+    }
+
+    /**
+     * 检测是否为单页
+     * @param {Object} val 
+     */
+    function testIsSPA(val){
+        var isSPA = false;
+        //无.html结尾 为动态页面多半为单页
+        if (val.path.indexOf(".html") < 0) {
+            isSPA = true;
+        }
+        //没有http or xsfapp前缀则确定为单页 否则为多页(项目中应不存在单页以外的动态页若存在也应使用绝对路径)
+        if (val.path.indexOf("://") > 0) {
+            isSPA = false;
+        }
+        return isSPA;
+    }
+
+    /**
+     * 将参数保存到Session中并在页面传递参数中写入会话Id(唯一性的取值Key)
+     * @param {Object} val 页面间传递参数
+     * @returns 会话Id(唯一性的取值Key)
+     */
+    function saveParams(val) {
+        var now = new Date();
+        var key = "NPP_" + now.getTime().toString(16);;
+        //参数存入session中
+        $G.Session().set(key, val.params);
+        if (val.query) {
+            val.query["_zkparams"] = key;
+        } else {
+            val.query = { "_zkparams": key };
+        }
+        return key;
+    }
+    
+    //#region 游览记录
+    function History() {
+        var session = $G.Session();
+        var key = 'ZK_History';
+        this.get = get;
+        this.push = push;
+        this.pop = pop;
+        this.query = query;
+
+
+        /**
+         * 获取游览记录栈
+         */
+        function get() {
+            return session.get(key);
+        }
+
+        /**
+         * 添加到游览记录栈中
+         * @param {Object} opt 游览信息
+         * opt:
+         * @param {String / Number} path 地址
+         * @param {Function} goBeforeCallback 跳转前调用
+         * @param {Boolean} isReplace 是否替换
+         * @param {Boolean} isTopGo 是否在最顶层页面框架打开链接
+         */
+        function push(opt) {
+            var val = session.get(key);
+            if (!val) val = [];
+            opt.winHistoryLen=window.history.length;
+            val.push(opt);
+            session.set(key, opt);
+        }
+
+        /**
+         * 从尾部开始删除游览记录栈中记录
+         * @param {Number} num 删除数量
+         */
+        function pop(num) {
+            var array = session.get(key);
+            if(typeof num == 'number'){
+                for (var index = 0; index < num; index++) {
+                    array.pop(); 
+                }         
+            }else{
+                array.pop();                
+            }
+            session.set(key, array);
+        }
+        
+        /**
+         * 在游览记录栈中查询对应信息
+         * @param {Object} params
+         * params:
+         * @param {String / Number} path 地址
+         * @param {Function} goBeforeCallback 跳转前调用
+         * @param {Boolean} isReplace 是否替换
+         * @param {Boolean} isTopGo 是否在最顶层页面框架打开链接
+         * @returns
+         * @param {Number} index 索引
+         * @param {Number} winHistoryLen 当时win历史栈中长度
+         * @param {String / Number} path 地址
+         * @param {Function} goBeforeCallback 跳转前调用
+         * @param {Boolean} isReplace 是否替换
+         * @param {Boolean} isTopGo 是否在最顶层页面框架打开链接 
+         */
+        function query(params) {
+            var array = session.get(key);
+            var res = null;
+            for (var index = array.length-1; index > 0; index--) {
+                var element = array[index];
+                if (element.path == params.path) {
+                    res = element;
+                    break;
+                }
+            }
+            return res;
+        }
+    }
+    //#endregion
+
+    
+        function init(){
+            var Session = $G.Session();
+
+            // 事件触发Url
+            // var triggerUrl;
+            // var len=window.history.length;
+            // $App.ready(function(){
+            //     // 全局监听游览器前进或者回退操作
+            //     window.addEventListener('popstate',function(event){
+            //         // webkitBug 避免重复触发
+            //         if (triggerUrl==window.location.href) {
+            //             return false;
+            //         }
+            //         triggerUrl=window.location.href;
+            //         console.log(event);
+            //         console.log(window.history.length);
+            //         // if (len > window.history.length) {
+            //         //     console.log('返回');
+            //         // } else {
+            //         //     console.log('前进');
+            //         // }
+            //         // len = window.history.length;
+            //     });
+            // });
+
+        }
+        init();
 }
 ;/*!app_core/index.js*/
 /**
@@ -13678,6 +14686,7 @@ function ZKCache() {
  * ================================
  */
 /************************************************App主控制代码*********************************************/
+$log.frame("App:开始执行App主控制代码");
 if (typeof $App == "undefined") {
 	window.$App = {
 		Info: {}
@@ -13789,7 +14798,11 @@ $App._userInfo = (function () {
 			deUserId: deUserId,
 			isInWebView: token ? true : false
 		};
-
+		var href=window.location.href;
+		//当Url中存在key __userid和__token时则视为在App中
+		if (href.indexOf("__userid")>0&&href.indexOf("__token")>0) {
+			info.isInWebView=true;
+		}
 		session.set("XSF_UserInfo", info);
 	}
 	//通过是否一开始就存在token 判断是否在私有App内嵌游览器中
@@ -13803,6 +14816,8 @@ $App._userInfo = (function () {
 $App.UserInfo = function () {
 	$App._userInfo.update = function (info) {
 		$App._userInfo = $G.objSetDefaultVal(info, $App._userInfo);
+		if(info.token)$ZK.HTTPConfig.headers["token"]=info.token;
+        if(info.userId)$ZK.HTTPConfig.headers["m-ui"]=info.userId;
 		$G.Session().set("XSF_UserInfo", $App._userInfo);
 	}
 	return $App._userInfo;
@@ -13909,77 +14924,12 @@ $App.ready = function (_func) {
  */
 $App.ViewModel = function (vm) {
 	$App.ready(function () {
-		new Vue(vm);
+		var zkLayer = new ZKLayer(vm);
+		//模态窗类 暴露为全局对象
+		$App.Modal = zkLayer.Modal;
+		var viewModal= new Vue(vm);
+		zkLayer.setViewModal(viewModal);
 	});
-};
-
-/**
- * 当前生成的弹出层栈
- * 注:主要用于缓存弹出层,实现复用
- */
-$App.LayerStack = [];
-
-/**
- * 创建模态窗
- * @return {Object} component组件视图模型构造参数
- */
-$App.Modal = function (vmOptions) {
-
-	//	if (window.top!=window.self) {
-	//		return window.top.$App.Modal(vmOptions);
-	//	}
-	if (isEmpty(vmOptions.methods)) {
-		vmOptions.methods = {};
-	}
-
-	/**
-	 * 显示
-	 * @param {Object} options 显示选项
-	 * options:--------------------------------
-	 * backdrop:"true 点击背景关闭模态窗"
-	 * keyboard:"true 键盘上的 esc 键被按下时关闭模态框。"
-	 * show:"true 模态框初始化之后就立即显示出来。"
-	 * 
-	 */
-	vmOptions.methods.$_Show = function (options) {
-		if (!options) {
-			options = {
-				backdrop: 'static'
-			};
-		}
-		options.show = true;
-		var modalView = this.$el.querySelector(".modal");
-		if (!modalView) {
-			modalView = this.$el;
-		}
-		//		modalView.setAttribute("tabindex",)
-		$(modalView).modal(options);
-	}
-
-	/**
-	 * 隐藏
-	 */
-	vmOptions.methods.$_Hide = function () {
-		var modalView = this.$el.querySelector(".modal");
-		if (!modalView) {
-			modalView = this.$el;
-		}
-		$(modalView).modal('hide');
-	}
-
-	var component = Vue.extend(vmOptions);
-	var vm = new component().$mount();
-	//若页面没有模态弹出层容器则创建容器
-	if (docId('curLayer') == null) {
-		$("body").append('<div id="curLayer" style="displa:none;"></div>');
-	}
-	docId("curLayer").appendChild(vm.$el);
-	$App.LayerStack.push(vm);
-	if ($App.LayerStack.length > 5) {
-		//栈中最多缓存5个窗口
-		$App.LayerStack.splice(0, 1);
-	}
-	return vm
 };
 
 /**
@@ -14130,7 +15080,7 @@ $App.dateControlInit = function (opt) {
  */
 $App.lessAppVer = function (version) {
 	if (!version) {
-		$log("$App.lessAppVer:版本号不存在!");
+		$log.frame("$App.lessAppVer:版本号不存在!");
 		return true;
 	}
 	var array = version.split(".");
@@ -14164,114 +15114,15 @@ $App.ImgViewer = function (id, opt) {
 }
 
 /**
- * 导航到一个新页面
- * @param {Object|string} val
- * val可为绝对路径或者相对路径
- * val为对象时: 
- *	path: '...',
- *	// params 和 query 可选
- *	params: { ... },非链接中的参数
- *	query: { ... }
- * 	goBeforeCallback:function 跳转前回调
- *  isTopGo:bool 是否是最顶层跳转
- */
-$App.go = function (val) {
-	var type = typeof val;
-	if (type == 'string'||type == 'number') {
-		val = {
-			path: val.toString()
-		};
-	}
-
-	if (val.goBeforeCallback) {
-		val.goBeforeCallback();
-	}
-
-	//刷新当前页面
-	if (val.path == 0) {
-		window.location.href = window.location.href;
-		window.location.reload(true);
-		return true;
-	}
-
-
-	var isSPA = false;
-	//无.html结尾 为动态页面多半为单页
-	if (val.path.indexOf(".html") < 0) {
-		isSPA = true;
-	}
-	//没有http or xsfapp前缀则确定为单页 否则为多页(项目中应不存在单页以外的动态页若存在也应使用绝对路径)
-	if (val.path.indexOf("://") > 0) {
-		isSPA = false;
-	}
-	//将将要跳转的地址压入栈中
-	var session = $G.Session();
-	var historyStack = session.get("zk_url_stack");
-	if (!historyStack) {
-		historyStack = [];
-	}
-	//检测是否跳转到到栈中记录的历史地址
-	if (val.gotoHistory) {
-		var index = -1;
-		for (var i = 0, len = historyStack.length; i < len; i++) {
-			if (item.path == val.path) {
-				index = i;
-				break;
-			}
-		}
-		if (index != -1) {
-			//删掉多余的url记录
-			historyStack.splice(index);
-		}
-	}
-	historyStack.push(val);
-	session.set("zk_url_stack", historyStack);
-	
-	//单页时处理
-	if (window.$App_SPA_Router && isSPA) {
-		//为负数时为 回退步数 或者前进步数
-		if (typeof val.path == 'number') {
-			$App_SPA_Router.go(val);
-		} else {
-			$App_SPA_Router.push(val);
-		}
-		return true;
-	}
-
-	//多页路由跳转
-	//为相对路径时
-	if (val.path.indexOf('/') == 0) {
-		//基于根目录的路径时 修正为绝对路径 兼容file://协议
-		val.path = $App.RootUrl + val.path;
-	}
-	//url链接携带参数
-	if (!isEmpty(val.query)) {
-		val.path = val.path + "?" + $G.toQueryString(val.query);
-	}
-	//非url连接携带参数
-	if (!isEmpty(val.params)) {
-		//参数存入session中
-		$G.Session().set("NowPageParams", val.params);
-	} else {
-		//去除session中参数 保持对应的session中参数和页面保持一致
-		$G.Session().remove("NowPageParams");
-	}
-	if (val.isTopGo) {
-		window.top.location.href = val.path;
-	} else {
-		window.location.href = val.path;
-	}
-};
-
-/**
  * 获取当前页面参数
  * @param {Object} key
  */
 $App.getPageParam = function (key) {
 	//优先从Url中获取 不存在则尝试在单页路由中获取
 	var val = $G.getUrlParam(key);
+	var paramsKey = $G.getUrlParam("_zkparams");
 	//	从session中尝试获取参数
-	var nowPageParams = $G.Session().get("NowPageParams");
+	var nowPageParams = $G.Session().get(paramsKey);
 	if (nowPageParams) {
 		if (nowPageParams[key]) {
 			val = nowPageParams[key];
@@ -14296,40 +15147,7 @@ $App.getPageParam = function (key) {
 
 (function () {
 
-	/**
-	 * 字数限制 指令
-	 * 注:用于限制字数 超过字数超出部分自动换为...
-	 */
-	Vue.directive('zk-limit', {
-		inserted: zkLimit,
-		// 当绑定元素插入到 DOM 中。
-		update: zkLimit
-	});
-
-	function zkLimit(el, binding, vnode, oldVnode) {
-		if (typeof binding.value == "number") {
-			if (el.innerHTML.length > binding.value) {
-				el.innerHTML = el.innerHTML.substr(0, binding.value) + "...";
-			}
-		}
-	}
-
 	var $document = $(document);
-
-	/**
-	 * View初始化
-	 */
-	function pageInit() {
-
-	}
-
-	/**
-	 * Dom渲染完毕后执行
-	 */
-	$document.ready(function () {
-		pageInit();
-	});
-
 	var loca = document.location;
 	var rootUrl = loca.protocol + "//" + loca.host;
 
@@ -14349,23 +15167,41 @@ $App.getPageParam = function (key) {
 	if (!$App.RootUrl) {
 		$App.RootUrl = rootUrl;
 	}
-
+	//路由控制实例化
+	window.$ZKRoute=new ZKRoute();
+	$App.go=$ZKRoute.go;
 	// 通知中心实例化
 	window.$Observer = new ZKObserver();
 	// HyApp实例化
 	window.$HyApp = new HyApp();
 	window.$ZKCache = new ZKCache();
+	// 框架核心库
+	var zkcore = new ZKCore();
+	//加载框架核心库插件
+	Vue.use(zkcore.vuePlugin);
+	
 	//App信息初始化
 	ZKAppInfo(function (info) {
+		$log.frame("App:信息初始化完成");
+		// 更新$App.Info 注:info中已经包含$App.Info已有信息
 		$App.Info = info;
+		
+		if(typeof $ZK == "undefined")window.$ZK={};
+		if(typeof $ZK.HTTPConfig == "undefined")$ZK.HTTPConfig={};
 		// 网路请求插件实例化
-		new ZKHttp($App.UserInfo(), info);
+		var zkhttp = new ZKHttp(ZKHttpConfig($ZK.HTTPConfig,$App.UserInfo(), info));
+		//加载网络请求插件
+		Vue.use(zkhttp.vuePlugin);
+		
 		$App.readyState = true;
-		// 发布已App已准备完成
+		// 发布App信息已准备完成通知
 		$Observer.publish("app-ready");
 		//存在H5版本号标志则进行检测
 		if($App.Info&&$App.Info.h5Version){
 			$ZKCache.checkH5Version($App.Info.h5Version);
 		};
 	});
+		
+	//3.0前端项目未独立部署时使用 独立部署时去除
+	//	$App.RootUrl = $App.RootUrl + "/statics";
 })();

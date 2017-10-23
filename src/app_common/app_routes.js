@@ -1,10 +1,11 @@
+"use strict";
 /**
  * 应用路由配置
  */
 var routes = [
     {
        path: '/',
-       redirect: '/test'
+       redirect: '/test/a'
     }
 ];
 //添加业务模块
