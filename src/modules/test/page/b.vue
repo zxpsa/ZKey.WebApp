@@ -11,17 +11,17 @@
 </style>
 <template lang="html">
     <div class="_vuec">
-        <div>a页面</div>
+        <div>b页面</div>
         <div @click="testClick()">按钮</div>
         <div @click="toAPage()">返回到a页面</div>
-        <div @click="toAPage1()">跳转到a页面</div>
-        <div @click="toAPage2()">跳转到baidu页面</div>
+        <div @click="toAPage1()">跳转到a页面 无导航栏</div>
+        <div @click="toAPage2()">跳转到baidu页面 有导航栏</div>
         <div v-text="msg"></div>
     </div>
 </template>
 <script lang="es">
-    const methods = { testClick, toAPage, toAPage1, toAPage2 };
-    export default { data, mounted, methods }
+    const methods = {testClick, toAPage, toAPage1, toAPage2 };
+    export default { data, mounted, methods,refresh }
 
     function data() {
         return {
@@ -30,7 +30,13 @@
     }
 
     function mounted() {
-        this.setTimeOut(2000).then(() => this.msg = 2000);
+        // this.setTimeOut(2000).then(() => this.msg = 2000);
+        // this.msg = $App.getPageParam('test');
+    }
+
+    function refresh() {
+        console.log('调用刷新方法');
+        this.msg = $App.getPageParam('test');
     }
 
     function testClick() {
@@ -40,15 +46,21 @@
 
     function toAPage() {
         $App.go(-1);
-        
     }
 
     function toAPage1() {
-        $App.go('/test/a');
+        $App.go({
+            path:'/test/a',
+            query:{
+                '_zknav':'no'
+            }
+        });
     }
 
     function toAPage2(params) {
-        $App.go('http://www.baidu.com');
+        $App.go({
+            path:'http://www.baidu.com'
+        });
     }
 
 </script>

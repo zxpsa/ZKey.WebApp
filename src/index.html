@@ -18,10 +18,16 @@
 	</head>
 	<body>
 		<div id="app">
-				<keep-alive>
-			<router-view></router-view>
-		</keep-alive>
-		</div>		
+			<head-nav class="head-nav" :back-btn="$store.state.headNav.navBackBtn" :title="$store.state.headNav.pageTitle" :type="$store.state.headNav.navType" v-show="$store.state.headNav.showNav" @btn-click="$store.state.headNav.btnClickCallback" :right-btns="$store.state.headNav.navRightBtns"></head-nav>
+			<keep-alive>
+				<router-view></router-view>
+			</keep-alive>
+		</div>
+		<script>
+		window.onerror=function(){
+			alert(JSON.stringify(arguments));
+		}
+		</script>		
 		<script type="text/javascript">
 			$App.ViewModel(require('./index.es.js'));
 		</script>

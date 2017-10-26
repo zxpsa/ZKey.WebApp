@@ -17,4 +17,9 @@ module.exports = [{
 	component: function (resolve) {
 		require.async('modules/test/page/index.vue', resolve);
 	}
+},{
+	path: '/test/c', //页面
+	component: function (resolve) {
+		require.async('modules/test/page/c.vue', resolve);
+	}
 }];

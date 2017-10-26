@@ -19,7 +19,9 @@
     <div class="_vuec">
         <div>a页面</div>
         <div @click="testClick()">按钮</div>
-        <div @click="toBPage()">跳转到b页面</div>
+        <div @click="toBPage()">跳转到b页面 无导航栏</div>
+        <div @click="toBPageIndex()">跳转到Index页面 有导航栏</div>
+        <div @click="toC()">跳转到C页面 无导航栏</div>
         <div v-text="msg"></div>
         <div> <img src="http://img.taopic.com/uploads/allimg/120727/201995-120HG1030762.jpg" alt=""></div>
         <div @click="testQR1()">弹出个人二维码</div>
@@ -29,8 +31,9 @@
     </div>
 </template>
 <script lang="es">
-    const methods = { testClick, toBPage,testQR1,testQR2,testQR3, testQR9 };
-    export default { data,created ,mounted, methods, beforeRouteEnter,beforeRouteLeave}
+    const methods = { testClick, toBPage,testQR1,testQR2,testQR3, testQR9,toBPageIndex,toC };
+    const watch ={ msg };
+    export default { data,created ,mounted, methods, beforeRouteEnter,beforeRouteLeave,watch}
     
     function data() {
         return {
@@ -39,9 +42,26 @@
         };
     }
     // 页面初始化
-    function created() {
-        
-    }
+        function created() {
+            this.$store.commit('navState', {
+                title: "测试",
+                type: 0,
+                show: true,
+                navRightBtns: [{
+                    label: "更多",
+                    key: "moreBtn"
+                }], 
+                btnClickCallback: function (btn) {
+                    console.log(btn);
+                },
+                navBackBtn:
+                {
+                    label: '<div class="arrow-right"><i></i></div>',
+                    key: "backBtn"
+                }
+            });
+
+        }
     
     function beforeRouteEnter(to, from, next) {
         next((vm)=>{
@@ -80,8 +100,28 @@
     }
 
     function toBPage() {
-        $App.go('/test/b');
+        $App.go({
+            path: '/test/b',
+            query:{
+                '_zknav':'no'
+            }
+        });
         // window.location.href=$App.RootUrl+'#/test/b';
+    }
+
+    function toBPageIndex() {
+        $App.go({
+            path:'/test'
+        });
+    }
+
+    function toC() {
+        $App.go({
+            path: '/test/c',
+            query:{
+                '_zknav':'no'
+            }
+        });
     }
 
     function  testQR1() {
@@ -138,6 +178,10 @@
             prompt2:'二维码下方按钮提示',
             color:'#FF0000'
 		});	
+    }
+
+    function msg() {
+        // console.log(this);
     }
 
 

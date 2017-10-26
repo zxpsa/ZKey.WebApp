@@ -1,11 +1,11 @@
 <style lang="css">
     ._vuec button {
-        
+
     }
 </style>
 <template lang="html">
     <div class="_vuec">
-        
+        <div>index</div>
     </div>
 </template>
 <script lang="es">

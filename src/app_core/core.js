@@ -12539,8 +12539,8 @@ General.compObj = function(obj1, obj2) {
  * 在URL中获取参数
  * @param {string} name
  */
-General.getUrlParam = function(name) {
-	var search = window.location.href;
+General.getUrlParam = function(name,search) {
+	if(!search)search = window.location.href;
 	var index=search.indexOf("?");
 	if(index > -1) {
 		search = search.substring(index+1);
@@ -14266,16 +14266,38 @@ function ZKCore(config) {
         }
 
         _vue.mixin({
+            created: function () {
+                if (this.$root != this.$parent) return false;
+            },
             beforeRouteEnter: function (to, from, next) {
-                console.log(from.path);
-                console.log(JSON.stringify(to));
+                console.log(to.meta);
                 // 在渲染该组件的对应路由被 confirm 前调用
                 // 不！能！获取组件实例 `this`
                 // 因为当守卫执行前，组件实例还没被创建
-                next(function(vm) {
+                next(function (vm) {
                     if (vm.$root != vm.$parent) return false;
+                    var pushedRes = $ZKRoute.history.push({
+                        path: to.path,
+                        fullPath: to.fullPath
+                    });
+                    if (vm.zkFinshCreated) {
+                        // 是否为新增跳转界面
+                        if (pushedRes!=-1) {
+                            console.log('刷新');
+                            vm.refresh();
+                        } else {
+                            // 检查页面参数中是否存在默认刷新标记,若存在则强制刷新
+                            if ($App.getPageParam('isRefresh')) vm.refresh();
+                            if ($App.getPageParam('isRefresh')) console.log('刷新');
+                        }
+                    } else {
+                        // 标明组件实例初始化创建已经完成
+                        vm.zkFinshCreated = true;
+                    }
                     // 记录前一个页面路由
-                    vm.zkReferrer = from;
+                    vm.zkReferrer = {
+                        fullPath: from.fullPath
+                    };
                 });
             },
             beforeRouteUpdate: function (to, from, next) {
@@ -14283,29 +14305,31 @@ function ZKCore(config) {
                 // 举例来说，对于一个带有动态参数的路径 /foo/:id，在 /foo/1 和 /foo/2 之间跳转的时候，
                 // 由于会渲染同样的 Foo 组件，因此组件实例会被复用。而这个钩子就会在这个情况下被调用。
                 // 可以访问组件实例 `this`
-                // console.log(this);
+                console.log('beforeRouteUpdate');
+                console.log(this);
             },
             beforeRouteLeave: function (to, from, next) {
                 if (this.$root != this.$parent) {
                     next();
                     return false;
-                }                
+                }
                 // 导航离开该组件的对应路由时调用
                 // 可以访问组件实例 `this`
-                // 返回时,标记回收该组件
-                if (to.fullPath == this.zkReferrer.fullPath) {
-                    this.zkNeedDestroy=true;
+                // 可能为返回时,标记回收该组件
+                if (to.path == this.zkReferrer.path) {
+                    this.zkNeedDestroy = true;
                 }
+                to.meta.aa = false;
                 next();
             },
             // 组件处于停止状态(keepaline);
-            deactivated: function(){
+            deactivated: function () {
                 if (this.$root != this.$parent) return false;
-                if (this.zkNeedDestroy==true) {
-                   this.$destroy(); 
+                if (this.zkNeedDestroy == true) {
+                    this.$destroy();
                 }
             }
-            
+
         });
     }
 
@@ -14422,7 +14446,7 @@ function ZKCore(config) {
 function ZKRoute() {
     var _self=this;
     _self.go = go;
-    _self.history=[];
+    _self.history = new History();
     _self.saveParams=saveParams;
 
     /**
@@ -14441,10 +14465,38 @@ function ZKRoute() {
                 path: val
             };
         }
-        //非url连接携带参数
-        if (val.params) {
+        // if(val.query){
+        //     val.query['_zknav'] = 'no';
+        // }else{
+        //     val.query={
+        //         '_zknav':'no'
+        //     };
+        // }
+
+        // 若前往历史记录中的位置时,计算出距离,触发返回方法
+        if (val.toHistory) {
+            var backObj = _self.history.computedBackStep(val.path);
+            if (backObj) {
+                go(-1*backObj.sortStep);
+                if (val.isRefresh) {
+                    if (val.params) {
+                        val.params.isRefresh=true;
+                    }else{
+                        val.params = {
+                            isRefresh : true
+                        }
+                    }
+                    //参数存入session中
+                    $G.Session().set(backObj['_zkp'], val.params);
+                }
+            }
+            return false;
+        }
+        //存储页面访问传参
+        if (type != 'number') {
             saveParams(val);
         }
+
         // 原始值
         var orgValPath = val.path;
         val.path = ""+val.path;
@@ -14463,16 +14515,11 @@ function ZKRoute() {
         //单页时处理
         if (window.$App_SPA_Router && isSPA) {
             if (val.isReplace) {
+                // 去除当前页面在记录中的位置
+                _self.history.pop();
                 $App_SPA_Router.replace(val);
-                var lastVal=_self.history.pop();
-                if (lastVal) {
-                     //加入历史栈记录中
-                    _self.history.push(val);
-                }
             } else {
                 $App_SPA_Router.push(val);
-                //加入历史栈记录中
-                _self.history.push(val);
             }
             return true;
         }
@@ -14508,26 +14555,11 @@ function ZKRoute() {
             window.location.reload(true);
             return true;
         }
-
-        var steps=num*-1;
-        // if(_self.history.length>=steps){
-            var endIndex=_self.history.length-steps;
-            //重设回退后的路由历史
-            _self.history.splice(endIndex,steps);
-            if(testIsSPA({path:window.location.href})){
+        if(testIsSPA({path:window.location.href})){
                 $App_SPA_Router.go(num);
-            }else{
+        }else{
                 history.go(num);
-            }
-        // }else{
-        //     if ($App.Page.HomeIndex) {
-        //         //无返回时返回首页
-        //         _self.go({
-        //             path:$App.Page.HomeIndex,
-        //             isReplace:true
-        //         }); 
-        //     }
-        // }
+        }
     }
 
     /**
@@ -14554,13 +14586,17 @@ function ZKRoute() {
      */
     function saveParams(val) {
         var now = new Date();
-        var key = "NPP_" + now.getTime().toString(16);;
-        //参数存入session中
-        $G.Session().set(key, val.params);
+        // 页面key
+        var key = "zkpar_" + now.getTime().toString(16);;
+        if (val.params) {
+            //参数存入session中
+            $G.Session().set(key, val.params);
+        } 
+        
         if (val.query) {
-            val.query["_zkparams"] = key;
+            val.query["_zkp"] = key;
         } else {
-            val.query = { "_zkparams": key };
+            val.query = { "_zkp": key };
         }
         return key;
     }
@@ -14569,10 +14605,11 @@ function ZKRoute() {
     function History() {
         var session = $G.Session();
         var key = 'ZK_History';
+        this.nowPage = null;
         this.get = get;
         this.push = push;
         this.pop = pop;
-        this.query = query;
+        this.computedBackStep = computedBackStep;
 
 
         /**
@@ -14586,17 +14623,105 @@ function ZKRoute() {
          * 添加到游览记录栈中
          * @param {Object} opt 游览信息
          * opt:
-         * @param {String / Number} path 地址
-         * @param {Function} goBeforeCallback 跳转前调用
-         * @param {Boolean} isReplace 是否替换
-         * @param {Boolean} isTopGo 是否在最顶层页面框架打开链接
+         * @param {String} path 路径
+         * @param {String} fullPath 完整路径
+         * 注:
+         * 1.以第一次添加该记录时的length值作为记录在路由栈中的记录,
+         * 若出现在同一个位置出现相同的则替换当前位置值
+         * 2.记录列表最后一位始终为当前页面
+         * A->B->C->P1->P2->P3->C->B->D
+         * 1->2->3->04->05->06->7->8->9
+         * @returns 
+         * 是否添加成功
          */
-        function push(opt) {
-            var val = session.get(key);
-            if (!val) val = [];
-            opt.winHistoryLen=window.history.length;
-            val.push(opt);
-            session.set(key, opt);
+        // function push(opt) {
+        //     var pushed=false;
+        //     var arr = session.get(key);
+        //     if (!arr) arr = [];
+        //     opt.winHistoryLen=window.history.length;
+        //     // 是否处理额外记录
+        //     var dealExtra = false;
+        //     var index = 0,
+        //         len = arr.length;
+        //     for (; index < len; index++) {
+        //         var element = arr[index];
+        //         //若检测到已存在相同的记录则放弃添加到记录中
+        //         if(element.winHistoryLen == opt.winHistoryLen){
+        //             if(element.fullPath == opt.fullPath){
+        //                 return pushed;
+        //             }else{
+        //                 //#region 替换的记录索引小于记录中的最大索引时,说明记录线已经变更,则更新记录线
+        //                 if(opt.winHistoryLen < arr[len-1].winHistoryLen){
+        //                     element.path = opt.path;
+        //                     element.fullPath = opt.fullPath;
+        //                     dealExtra = true;
+        //                 }
+        //                 //#endregion    
+        //                 break;
+        //             }
+        //         }
+        //     }
+
+        //     // 游览记录线变更后,去除额外记录
+        //     if (dealExtra) {
+        //         for (var i = 0,leni = arr.length; i < leni; i++) {
+        //             if(arr[i].winHistoryLen > opt.winHistoryLen){
+        //                 arr.splice(i,1);
+        //                 leni--;
+        //                 i--;
+        //             }
+        //         }
+        //     }
+            
+        //     // 检查完记录依然未发现类似记录则添加到记录中
+        //     if (index==len){
+        //         arr.push(opt);
+        //         pushed=true;
+        //     }
+        //     // console.log(JSON.stringify(arr));
+        //     session.set(key, arr);
+        //     return pushed;
+        // }
+
+        /**
+         * 添加到游览记录中
+         * route:
+         * @param {String} path 路径
+         * @param {String} fullPath 完整路径
+         * @returns -1:后退 0.刷新 1.前进
+         */
+        function push(route) {
+            var res=0;
+            var arr = session.get(key);
+            if (!arr) arr = [];
+            console.log(arr);
+            route.winHistoryLen=window.history.length;
+            var i = 0;
+            var len = arr.length;
+            for (;i < len; i++) {
+                var item = arr[i];
+                if (route.fullPath == item.fullPath) {
+                    // url存在于浏览记录中即为后退
+                    // url在浏览记录的末端即为当前页面刷新
+                    break;
+                }
+            }
+            if (i!=len-1) {
+                // url存在于浏览记录中且不为游览记录末端即为后退
+                if (i<len) {
+                    // 去除多余的游览记录
+                    arr.splice(i+1,len - 1 -i);
+                    res=-1;
+                }else{
+                    // url不再游览记录中即为前进
+                    arr.push(route);
+                    res=1;
+                }
+            }
+            // 更新session中记录
+            session.set(key, arr);
+            console.log(arr);
+            return res;
         }
 
         /**
@@ -14614,31 +14739,56 @@ function ZKRoute() {
             }
             session.set(key, array);
         }
-        
+
         /**
-         * 在游览记录栈中查询对应信息
-         * @param {Object} params
-         * params:
-         * @param {String / Number} path 地址
-         * @param {Function} goBeforeCallback 跳转前调用
-         * @param {Boolean} isReplace 是否替换
-         * @param {Boolean} isTopGo 是否在最顶层页面框架打开链接
-         * @returns
-         * @param {Number} index 索引
-         * @param {Number} winHistoryLen 当时win历史栈中长度
-         * @param {String / Number} path 地址
-         * @param {Function} goBeforeCallback 跳转前调用
-         * @param {Boolean} isReplace 是否替换
-         * @param {Boolean} isTopGo 是否在最顶层页面框架打开链接 
+         * @param {String} aimPath 目标地址路径
+         * @returns 与当前路径间最短路径,若为null为未计算成功
          */
-        function query(params) {
+        function computedBackStep(aimPath) {
             var array = session.get(key);
+            var aims = [];
+            // 当前页面
+            var nowPage;
+            // 最终将会前往的页面
+            var aimPage;
+            var nowHref = window.location.href;
             var res = null;
-            for (var index = array.length-1; index > 0; index--) {
+            for (var index = 0,len = array.length;index < len;index++) {
                 var element = array[index];
-                if (element.path == params.path) {
-                    res = element;
-                    break;
+                // 搜索目标页面在记录中的记录列表
+                if (element.path == aimPath) {
+                    aims.push(element);
+                }
+                // 搜索当前页面在记录中的记录列表
+                if(nowHref.indexOf(element.fullPath) > -1){
+                    nowPage = element;
+                }
+            }
+            var sortStep = 0;
+            // 未在游览记录中查找到当前页面,则说明当前的window.history.length与记录中最后一个出现重复,通常为强行刷新了页面导致
+            if (!nowPage) {
+                nowPage = {
+                    winHistoryLen:window.history.length
+                }
+            }
+            for (var i = 0; i < aims.length; i++) {
+                var aim = aims[i];
+                // 页面间游览记录差距
+                var dvalue = nowPage.winHistoryLen -  aim.winHistoryLen;
+                // 记录最短距离
+                if (dvalue > 0 && (sortStep==0 || dvalue<sortStep)) {
+                    sortStep = dvalue;
+                    aimPage=aim;
+                }
+            }
+            var res;     
+            if(sortStep==0){
+                res = null;
+            }else{
+                debugger
+                res = {
+                    sortStep:sortStep,
+                    '_zkp':$G.getUrlParam('_zkp',aimPage.fullPath)
                 }
             }
             return res;
@@ -15120,8 +15270,8 @@ $App.ImgViewer = function (id, opt) {
 $App.getPageParam = function (key) {
 	//优先从Url中获取 不存在则尝试在单页路由中获取
 	var val = $G.getUrlParam(key);
-	var paramsKey = $G.getUrlParam("_zkparams");
-	//	从session中尝试获取参数
+	var paramsKey = $G.getUrlParam("_zkp");
+	//	从session中尝试获取参数 Session中参数优先级最高
 	var nowPageParams = $G.Session().get(paramsKey);
 	if (nowPageParams) {
 		if (nowPageParams[key]) {
@@ -15138,8 +15288,6 @@ $App.getPageParam = function (key) {
 					return null;
 				}
 			}
-		} else {
-
 		}
 	}
 	return val;

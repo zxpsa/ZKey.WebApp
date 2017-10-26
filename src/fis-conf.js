@@ -150,12 +150,12 @@ fis.match('::packager', {
 
 // 启用相对路径插件。
 fis.hook('relative')
-fis.match('**', {
-	relative: true
-})
-fis.match('**.vue', {
-	relative: false
-})
+// fis.match('**', {
+// 	relative: true
+// })
+// fis.match('**.vue', {
+// 	relative: false
+// })
 /************************************************开发模式***************************************************/
 fis.media('debug')
 	.set('project.ignore', ignoreList)
