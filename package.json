@@ -23,6 +23,6 @@
     "ant-design-vue": "^1.6.5",
     "vue": "^2.6.12",
     "vue-router": "^3.4.3",
-    "zkey.webapp.pc": "file:../ZKey.WebApp.PC"
+    "zkey.webapp.pc": "file:../framework/ZKey.WebApp.PC"
   }
 }
