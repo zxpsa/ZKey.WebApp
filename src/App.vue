@@ -16,14 +16,15 @@
                 </a-button>
             </template>
         </a-result> -->
-        <ZkBasicLayout></ZkBasicLayout>
+        <!-- <ZkBasicLayout></ZkBasicLayout> -->
     </a-config-provider>
 </template>
 <script>
-import { ZkBasicLayout } from 'ZKey.WebApp.PC/dist/index.esm';
+// import { ZkBasicLayout } from 'ZKey.WebApp.PC/dist/index.esm';
+import test from './test';
 export default {
     components:{
-        ZkBasicLayout
+        // ZkBasicLayout
     },
     /**
      * @returns { {} }

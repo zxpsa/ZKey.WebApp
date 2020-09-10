@@ -49,7 +49,9 @@ import {
     Descriptions,
     message,
     notification
-  } from 'ant-design-vue'
+  } from 'ant-design-vue';
+  // import proLayout from '@ant-design-vue/pro-layout'
+  // Vue.use(proLayout)
   Vue.use(ConfigProvider)
   Vue.use(Layout)
   Vue.use(Input)

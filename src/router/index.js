@@ -3,17 +3,39 @@ import VueRouter from 'vue-router';
 // import { BasicLayout, BlankLayout, PageView, RouteView } from 'zkey.webapp.pc/layouts/index';
 // import { BasicLayout } from 'zkey.webapp.pc/layouts/index';
 import Vue from 'vue';
-
+import BasicLayout from '@/modules/common/layouts/BasicLayout';
 Vue.use(VueRouter);
+
 // 路由和组件间的映射
 const routerMap = [
-    // {
-    //     path: '/',
-    //     name: 'index',
-    //     component: BasicLayout,
-    //     // redirect: cfg.homeIndex,
-    //     meta: { title: '首页' },
-    // },
+    {
+        path: '/',
+        name: 'index',
+        component: BasicLayout,
+        // redirect: cfg.homeIndex,
+        redirect: '/dashboard', 
+        meta: { title: '首页' },
+        hidden: true,
+        children: [{
+            name: 'index1',
+            path: '/dashboard',
+            component:()=> import('@/modules/demo/Demo.vue'),
+            meta: {
+                title: '首页1'
+            },
+            // children:[
+            //     {
+            //         name: 'index12',
+            //         path: '/dashboard1',
+            //         component:()=> import('@/modules/demo/Demo.vue'),
+            //         // redirect: '/dashboard',
+            //         meta: {
+            //             title: '首页12'
+            //         }
+            //     }
+            // ]
+        }]
+    },
     // {
     //     path: '/sysManage',
     //     meta: {
@@ -42,7 +64,7 @@ const constantRouterMap = routerMap.filter(item => item.hidden==true);
 
 export function createRouter() {
     return new VueRouter({
-        mode: 'history',
+        // mode: 'history',
         routes: constantRouterMap
     })
 }
