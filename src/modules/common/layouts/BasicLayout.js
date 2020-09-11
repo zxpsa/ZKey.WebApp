@@ -1,4 +1,5 @@
 import { ZkBasicLayout } from 'ZKey.WebApp.PC/dist/index.esm';
+import 'zkey.webapp.pc/dist/index.esm.css';
 export default {
     components:{
         ZkBasicLayout
