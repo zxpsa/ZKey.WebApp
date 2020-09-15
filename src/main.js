@@ -48,7 +48,8 @@ import {
     Statistic,
     Descriptions,
     message,
-    notification
+    notification,
+    FormModel
   } from 'ant-design-vue';
   // import proLayout from '@ant-design-vue/pro-layout'
   // Vue.use(proLayout)
@@ -93,6 +94,9 @@ import {
   Vue.use(Result)
   Vue.use(Statistic)
   Vue.use(Descriptions)
+  Vue.use(FormModel)
+  Vue.use(FormModel.Item)
+  
   Vue.config.productionTip = false;
 new Vue({
     router: createRouter(),

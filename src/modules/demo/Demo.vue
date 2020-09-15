@@ -19,35 +19,25 @@
                 </span>
             </template>
         </zk-list>
-        <!-- <personnel-edit ref="personnelEdit"></personnel-edit>
-        <PersonnelDetail ref="personnelDetail"></PersonnelDetail>
-        <DoctorDetailVue ref="DoctorDetailVue"></DoctorDetailVue> -->
+        <DemoDetail ref="demoDetail"></DemoDetail>
+        <DemoEdit ref="demoEdit"></DemoEdit>
     </div>
 </template>
 <script>
 // import { ZkSelect,ZkList } from 'ZKey.WebApp.PC';
 import { ZkSelect, ZkList, InputTypeEnum,ZkBtn } from 'ZKey.WebApp.PC/dist/index.esm.js';
 import { queryDemoListByPage } from '@/api/demo';
-// import { ZkList } from 'zkey.webapp.pc/dist/index.esm.js';
-// import PersonnelEdit from '@/modules/customerServiceManagement/PersonnelEdit';
-// import PersonnelDetail from './PersonnelDetail.vue';
-// import DoctorDetailVue from '@/modules/common/components/DoctorDetail.vue';
+import DemoDetail from './DemoDetail.vue';
+import DemoEdit from './DemoEdit.vue';
 
-// /sys/account;/sys/customer;/sys/doctors;
 const statusMap = {
   "-1": { status: 'default', text: '停用' },
   "1": { status: 'success', text: '启用' }
 }
+
 export default {
-    name:'PersonnelList',
-    components:{
-        ZkSelect,
-        ZkList,
-        ZkBtn
-        // PersonnelEdit,
-        // PersonnelDetail,
-        // DoctorDetailVue
-    },
+    name:'DemoList',
+    components:{ ZkSelect, ZkList, ZkBtn, DemoDetail, DemoEdit },
     data() {
         return {
             title:"客服人员管理",
@@ -77,23 +67,6 @@ export default {
             }
         }
     },
-    created(){
-        // let ws = new WebSocket('wss://kidney-websocket-dev.cqzhongshen.cn');
-        // debugger
-        // console.log(ws);
-        // ws.onopen=(e)=>{
-        //     debugger
-        //     console.log(e);
-        // }
-        // ws.onmessage = (e)=>{
-        //     debugger
-        //     console.log(e);
-        // }
-        // let webs = new WebSocket('ws://192.168.0.225:3000');
-        // webs.onmessage = (ev)=>{
-        //     console.log(ev);
-        // }
-    },
     filters: {
         statusFilter (type) {
             return statusMap[type].text
@@ -104,10 +77,10 @@ export default {
     },
     methods:{
         handleDetail(item){
-            console.log();
-            this.$refs.personnelDetail.show({
+            this.$refs.demoDetail.show({
                 id:item.id,
                 onOk:()=>{
+                    // 刷新当前列表
                     this.$refs.table.refresh(true);
                 }
             });
@@ -115,21 +88,13 @@ export default {
         },
         
         handleEdit(item){
-            if (item) {
-                console.log(item);
-                this.$refs.personnelEdit.show({
-                    id:item.id,
-                    onOk:()=>{
-                        this.$refs.table.refresh(true);
-                    }
-                });
-            }else{
-                this.$refs.personnelEdit.show({
-                    onOk:()=>{
-                        this.$refs.table.refresh(true);
-                    }
-                });
-            }
+           const id = item?item.id:null;
+           this.$refs.demoEdit.show({
+                id,
+                onOk:()=>{
+                    this.$refs.table.refresh(true);
+                }
+            })
         },
 
         handleDel(item){
