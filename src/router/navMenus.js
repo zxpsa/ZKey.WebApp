@@ -4,18 +4,15 @@
  */
 export default [
     {
-        path: '/listDemo',
+        path: '/workplace',
         meta: { icon: 'poweroff' }
     },
     {
-        path: '/lighting',
+        path: '/dashboard',
         meta: { icon: 'sliders' },
         children: [
             {
-                path: '/lighting/timingControl'
-            },
-            {
-                path: '/lighting/sceneControl'
+                path: '/dashboard/index'
             }
         ]
     }
