@@ -1,5 +1,5 @@
-import { ZkBasicLayout } from 'ZKey.WebApp.PC/dist/index.esm';
-import 'zkey.webapp.pc/dist/index.esm.css';
+import { ZkBasicLayout } from '@zkey-webapp/pc';
+import '@zkey-webapp/pc/dist/index.esm.css';
 export default {
     components: {
         ZkBasicLayout
@@ -51,36 +51,11 @@ export default {
     },
     computed: {
         navMenus() {
-            return [{
-                name: 'index1',
-                path: '/dashboard',
-                // component: BasicLayout,
-                // redirect: '/dashboard',
-                meta: {
-                    title: '首页1',
-                    icon: 'dashboard'
-                },
-                children: [
-                    {
-                        name: 'index12',
-                        path: '/dashboard1',
-                        // redirect: '/dashboard',
-                        meta: {
-                            title: '首页12',
-                            icon: 'dashboard'
-                        }
-                    },
-                    {
-                        name: 'index12',
-                        path: '/dashboard12',
-                        // redirect: '/dashboard',
-                        meta: {
-                            title: '首页122',
-                            icon: 'dashboard'
-                        }
-                    }
-                ]
-            }]
+            const dynamicRouter = this.$store.state.dynamicRouter;
+            // '/'节点下的路由作为导航菜单配置
+            let navMenus = dynamicRouter.filter(item => item.path == "/");
+            if (navMenus.length > 0) navMenus = navMenus[0].children;
+            return navMenus
         }
     },
     render() {

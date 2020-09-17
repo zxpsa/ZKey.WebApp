@@ -25,7 +25,7 @@
 </template>
 <script>
 // import { ZkSelect,ZkList } from 'ZKey.WebApp.PC';
-import { ZkSelect, ZkList, InputTypeEnum,ZkBtn } from 'ZKey.WebApp.PC/dist/index.esm.js';
+import { ZkSelect, ZkList, InputTypeEnum,ZkBtn } from '@zkey-webapp/pc';
 import { queryDemoListByPage } from '@/api/demo';
 import DemoDetail from './DemoDetail.vue';
 import DemoEdit from './DemoEdit.vue';

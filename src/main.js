@@ -51,6 +51,7 @@ import {
     notification,
     FormModel
   } from 'ant-design-vue';
+import { createStore } from './store/index';
   // import proLayout from '@ant-design-vue/pro-layout'
   // Vue.use(proLayout)
   Vue.use(ConfigProvider)
@@ -98,7 +99,11 @@ import {
   Vue.use(FormModel.Item)
   
   Vue.config.productionTip = false;
-new Vue({
-    router: createRouter(),
-    render: h => h(App)
-}).$mount('#app')
+  const store = createStore();
+  const router = createRouter(store);
+
+  new Vue({
+      store,
+      router,
+      render: h => h(App)
+  }).$mount('#app')

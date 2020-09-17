@@ -3,7 +3,7 @@
  * @param {Array} navMap 导航菜单配置 
  */
 export function generateAsyncRouter(routerMap, routerPageMap) {
-    return generateRouteByRouterMap([{
+    return generateRouteByRouterPageMap([{
         path: '/',
         children: routerMap
     }, {
@@ -17,6 +17,7 @@ export function generateAsyncRouter(routerMap, routerPageMap) {
  * @param {Array} routerPageMap 路由与页面配置
  */
 export function generateRouteByRouterPageMap(routerMap, routerPageMap) {
+    // return routerMap;
     for (let index = 0, len = routerMap.length; index < len; index++) {
         let navItem = routerMap[index];
         // 从映射表中读取页面详细信息,组装出路由
@@ -37,9 +38,9 @@ export function generateRouteByRouterPageMap(routerMap, routerPageMap) {
             }
         }
         if (navItem.children) {
-            navItem.children = generateRouteByRouterMap(navItem.children, routerPageMap);
+            navItem.children = generateRouteByRouterPageMap(navItem.children, routerPageMap);
             // 一级目录默认设置图标
-            if (!navItem.meta.icon) navItem.meta.icon = 'dashboard';
+            if (navItem.meta&&!navItem.meta.icon) navItem.meta.icon = 'dashboard';
         }
         routerMap[index] = navItem;
     }

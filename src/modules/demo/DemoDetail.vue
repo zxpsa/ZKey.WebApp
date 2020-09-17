@@ -11,7 +11,7 @@
     </ZkModal>
 </template>
 <script>
-    import { ZkModal, ZkDescList, ZkDescItem } from 'ZKey.WebApp.PC/dist/index.esm.js';
+    import { ZkModal, ZkDescList, ZkDescItem } from '@zkey-webapp/pc';
 
     export default {
         components: { ZkModal, ZkDescList, ZkDescItem },

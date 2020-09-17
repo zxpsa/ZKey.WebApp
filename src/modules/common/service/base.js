@@ -8,11 +8,7 @@ export function getDynamicRouter() {
     // 开发阶段拉取本地模拟全量的导航菜单配置
     return import('@/router/navMenus').then((result) => {
         const arr = result.default;
-        const aa = generateAsyncRouter(arr, routerPageMap);
-        console.log(aa);
-
-
-        return arr;
+        return generateAsyncRouter(arr, routerPageMap);;
     });
 }
 
